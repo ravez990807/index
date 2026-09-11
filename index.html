@@ -1,0 +1,2013 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trading Scan · Live</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#04060a; --bg2:#060911;
+  --panel:rgba(18,24,36,.55); --panel-solid:#0d121c;
+  --border:rgba(255,255,255,.08); --border-strong:rgba(255,255,255,.14);
+  --text:#eaeef6; --text-dim:#8b93a8; --text-faint:#565f74;
+  --cyan:#35e6ff; --violet:#b18cff;
+  --grad:linear-gradient(90deg,#35e6ff,#8c7bff 55%,#ff6bd6);
+  --up:#24e39b; --up-bg:rgba(36,227,155,.12);
+  --down:#ff5c7a; --down-bg:rgba(255,92,122,.12);
+  --amber:#ffb84d; --amber-bg:rgba(255,184,77,.12);
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --sans:'IBM Plex Sans',-apple-system,sans-serif;
+  --disp:'Space Grotesk',var(--sans);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:var(--sans);}
+body{min-height:100vh;background:
+  radial-gradient(1100px 500px at 15% -10%, rgba(53,230,255,.10), transparent 60%),
+  radial-gradient(900px 500px at 100% 0%, rgba(177,140,255,.10), transparent 55%),
+  linear-gradient(var(--bg2), var(--bg));
+  padding:26px 30px 70px;}
+.grid-overlay{position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.35;
+  background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);
+  background-size:42px 42px; mask-image:radial-gradient(900px 500px at 50% 0%, black, transparent 75%);}
+.wrap{max-width:1580px;margin:0 auto;position:relative;z-index:1;}
+.pagehead{display:flex;align-items:center;gap:12px;margin-bottom:16px;}
+.logo{width:26px;height:26px;border-radius:7px;background:var(--grad);display:flex;align-items:center;justify-content:center;box-shadow:0 0 24px rgba(53,230,255,.35);}
+.logo svg{width:14px;height:14px;}
+.pagehead h1{font-family:var(--disp);font-size:15px;font-weight:600;color:var(--text-dim);margin:0;letter-spacing:.3px;}
+.livedot{width:6px;height:6px;border-radius:50%;background:var(--up);box-shadow:0 0 8px var(--up);animation:pulse 1.8s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.livepill{margin-left:auto;display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:11.5px;color:var(--text-faint);}
+.panel{position:relative;background:var(--panel);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid var(--border);border-radius:16px;padding:26px 26px 4px;box-shadow:0 30px 80px -30px rgba(0,0,0,.6);overflow:hidden;}
+.panel::before{content:"";position:absolute;top:0;left:0;right:0;height:1px;background:var(--grad);opacity:.6;}
+.headrow{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;flex-wrap:wrap;gap:14px;}
+.headrow h2{font-family:var(--disp);font-size:23px;font-weight:700;margin:0 0 6px;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;letter-spacing:.2px;}
+.headrow .sub{font-size:13px;color:var(--text-faint);}
+.headrow .sub b{color:var(--text-dim);font-weight:600;}
+.headctrl{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.ctrlrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--border);}
+.sel{background:var(--panel-solid);border:1px solid var(--border-strong);color:var(--text-dim);font-size:12px;font-family:var(--mono);padding:7px 10px;border-radius:8px;}
+.inp{background:var(--panel-solid);border:1px solid var(--border-strong);color:var(--text);font-size:12px;font-family:var(--mono);padding:7px 10px;border-radius:8px;width:120px;}
+.inp:focus{outline:none;border-color:var(--cyan);}
+.inp.num{width:64px;}
+.lbl{font-size:11.5px;color:var(--text-faint);}
+.tfgroup{display:flex;border:1px solid var(--border-strong);border-radius:8px;overflow:hidden;}
+.tfbtn{padding:7px 11px;font-size:12px;font-family:var(--mono);color:var(--text-faint);background:var(--panel-solid);cursor:pointer;border-right:1px solid var(--border);}
+.tfbtn:last-child{border-right:none;}
+.tfbtn.active{background:rgba(53,230,255,.16);color:var(--cyan);font-weight:600;}
+.toggle{padding:7px 12px;font-size:12px;border:1px solid var(--border-strong);border-radius:8px;background:var(--panel-solid);color:var(--text-faint);cursor:pointer;font-family:var(--sans);}
+.toggle.on{background:rgba(53,230,255,.16);color:var(--cyan);border-color:var(--cyan);font-weight:600;}
+.btn{border:1px solid var(--border-strong);background:var(--panel-solid);color:var(--text-dim);font-size:12.5px;padding:8px 14px;border-radius:9px;display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--sans);font-weight:500;transition:all .15s;}
+.btn:hover{border-color:var(--cyan);color:var(--text);box-shadow:0 0 0 1px rgba(53,230,255,.25),0 0 18px rgba(53,230,255,.15);}
+.btn:disabled{opacity:.5;cursor:default;}
+.btn.gold{background:var(--grad);color:#04060a;border:none;font-weight:700;box-shadow:0 0 22px rgba(140,123,255,.35);}
+.btn.gold:hover{filter:brightness(1.08);box-shadow:0 0 30px rgba(140,123,255,.5);}
+.btn.gold:disabled{background:var(--panel-solid);color:var(--text-faint);box-shadow:none;}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:0;margin-bottom:18px;}
+.stat{position:relative;padding:16px 20px;border:1px solid var(--border);border-radius:12px;margin-right:12px;background:linear-gradient(180deg,rgba(255,255,255,.03),transparent);}
+.stat:last-child{margin-right:0;}
+.stat .label{font-size:11.5px;color:var(--text-faint);margin-bottom:9px;display:flex;justify-content:space-between;}
+.stat .label .src{font-family:var(--mono);font-size:9.5px;color:var(--text-faint);opacity:.7;}
+.stat .val{font-family:var(--mono);font-size:20px;font-weight:600;margin-bottom:5px;color:var(--text);}
+.pill{font-family:var(--sans);font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:5px;white-space:nowrap;margin-left:6px;}
+.pill.greed{background:var(--down-bg);color:var(--down);} .pill.fear{background:var(--up-bg);color:var(--up);} .pill.neutral{background:rgba(255,255,255,.06);color:var(--text-faint);}
+.stats-note{font-size:11px;color:var(--text-faint);margin:0 0 20px;line-height:1.6;}
+.progrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--text-dim);margin-bottom:10px;}
+.tag{background:var(--panel-solid);border:1px solid var(--border);border-radius:7px;padding:4px 10px;font-size:11.5px;color:var(--text-dim);font-family:var(--mono);}
+.tag.done{background:var(--up-bg);color:var(--up);border-color:transparent;font-weight:600;} .tag.err{background:var(--down-bg);color:var(--down);border-color:transparent;}
+.progrow .ts{margin-left:auto;color:var(--text-faint);font-family:var(--mono);font-size:11.5px;}
+.bar-outer{height:6px;border-radius:4px;background:var(--panel-solid);overflow:hidden;margin-bottom:16px;position:relative;border:1px solid var(--border);}
+.bar-inner{height:100%;width:0%;background:var(--grad);transition:width .3s ease;position:relative;}
+.bar-inner::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.5),transparent);width:60px;animation:shimmer 1.3s linear infinite;}
+@keyframes shimmer{0%{transform:translateX(-60px)}100%{transform:translateX(280px)}}
+.alertbar{border:1px solid rgba(255,184,77,.35);background:var(--amber-bg);border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:12px;color:var(--amber);display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;}
+.alertbar b{color:#ffd08a;}
+.alertbar .x{margin-left:auto;cursor:pointer;opacity:.7;}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--border);}
+.tab{position:relative;padding:10px 13px;font-size:13px;color:var(--text-faint);cursor:pointer;display:flex;align-items:center;gap:7px;border-radius:8px 8px 0 0;transition:color .15s;}
+.tab:hover{color:var(--text-dim);}
+.tab .n{font-family:var(--mono);font-size:11px;background:var(--panel-solid);color:var(--text-faint);padding:1px 6px;border-radius:5px;border:1px solid var(--border);}
+.tab.active{color:var(--text);} .tab.active .n{background:rgba(53,230,255,.14);color:var(--cyan);border-color:transparent;}
+.tab.active::after{content:"";position:absolute;left:8px;right:8px;bottom:-1px;height:2px;background:var(--grad);box-shadow:0 0 10px rgba(53,230,255,.6);}
+.section{padding:22px 0 28px;}
+.sec-title{display:flex;align-items:center;gap:10px;margin-bottom:4px;flex-wrap:wrap;}
+.sec-title h3{font-family:var(--disp);font-size:16px;margin:0;font-weight:700;}
+.sec-title .n{font-family:var(--mono);background:rgba(53,230,255,.14);color:var(--cyan);font-size:11.5px;padding:2px 8px;border-radius:6px;font-weight:600;}
+.sec-title .csv{margin-left:auto;font-size:11.5px;color:var(--text-faint);border:1px solid var(--border);padding:4px 10px;border-radius:7px;cursor:pointer;}
+.sec-title .csv:hover{color:var(--cyan);border-color:var(--cyan);}
+.sec-desc{font-size:12px;color:var(--text-faint);margin-bottom:16px;}
+.infobox{background:linear-gradient(180deg,rgba(177,140,255,.06),rgba(255,255,255,.02));border:1px solid var(--border);border-left:3px solid var(--violet);border-radius:8px;padding:13px 16px;font-size:12px;line-height:1.75;color:var(--text-dim);margin-bottom:18px;}
+.infobox b{color:var(--text);} .infobox .k{color:var(--violet);font-weight:600;}
+.subtabs{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+.subtab{font-size:12px;padding:6px 13px;border-radius:8px;background:var(--panel-solid);color:var(--text-faint);cursor:pointer;border:1px solid var(--border);}
+.subtab.active{border-color:var(--cyan);color:var(--text);font-weight:600;box-shadow:0 0 12px rgba(53,230,255,.15);}
+.subtab .up{color:var(--up);} .subtab .down{color:var(--down);}
+.tbl-wrap{border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+table{width:100%;border-collapse:collapse;font-size:12.5px;}
+thead th{text-align:left;color:var(--text-faint);font-weight:500;font-size:11px;padding:10px 12px;background:rgba(255,255,255,.02);border-bottom:1px solid var(--border);white-space:nowrap;}
+tbody tr{border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s;}
+tbody tr:last-child{border-bottom:none;} tbody tr:hover{background:rgba(53,230,255,.045);}
+tbody tr.watch td:first-child{box-shadow:inset 3px 0 0 var(--amber);}
+tbody tr.nohover{cursor:default;} tbody tr.nohover:hover{background:transparent;}
+td{padding:11px 12px;vertical-align:top;}
+td.sym{font-family:var(--mono);font-weight:600;font-size:13px;}
+td.sym a{color:var(--text);text-decoration:none;} td.sym a:hover{color:var(--cyan);}
+.star{color:var(--text-faint);cursor:pointer;font-size:14px;} .star.on{color:var(--amber);text-shadow:0 0 8px rgba(255,184,77,.7);}
+.pd{font-family:var(--mono);color:var(--text-faint);font-size:11.5px;}
+.typ{font-size:12px;color:var(--text-dim);}
+.status{display:inline-block;font-size:10.5px;font-weight:600;padding:3px 8px;border-radius:6px;white-space:nowrap;}
+.status.up{background:var(--up-bg);color:var(--up);} .status.down{background:var(--down-bg);color:var(--down);}
+.status.wait{background:rgba(255,255,255,.06);color:var(--text-faint);border:1px solid var(--border);}
+.status.tent{background:var(--amber-bg);color:var(--amber);}
+.stack{line-height:1.6;} .stack .m{color:var(--text);font-weight:600;} .stack .s{color:var(--text-faint);font-size:11px;} .stack .mid{color:var(--text-dim);}
+.spark{vertical-align:middle;}
+.chg{font-family:var(--mono);font-weight:600;font-size:12px;} .chg.pos{color:var(--up);} .chg.neg{color:var(--down);}
+.tagset{display:flex;gap:4px;flex-wrap:wrap;}
+.microtag{font-size:10px;font-family:var(--mono);padding:2px 6px;border-radius:5px;border:1px solid var(--border);color:var(--text-dim);}
+.microtag.hot{border-color:rgba(255,184,77,.4);color:var(--amber);}
+.foot-note{font-size:11.5px;color:var(--text-faint);padding:12px 4px 2px;}
+.placeholder{padding:36px 10px;text-align:center;color:var(--text-faint);font-size:12.5px;border:1px dashed var(--border);border-radius:10px;}
+.loading-row{display:flex;align-items:center;gap:10px;padding:30px 6px;color:var(--text-faint);font-size:12.5px;}
+.errbox{background:var(--down-bg);border:1px solid rgba(255,92,122,.3);color:var(--down);border-radius:10px;padding:12px 16px;font-size:12.5px;margin-bottom:16px;}
+.warnbox{background:var(--amber-bg);border:1px solid rgba(255,184,77,.3);color:var(--amber);border-radius:10px;padding:12px 16px;font-size:12px;line-height:1.7;margin-bottom:16px;}
+.glossary{margin-top:28px;border-top:1px solid var(--border);padding-top:20px;}
+.glossary h4{font-size:13px;color:var(--text-dim);margin:16px 0 10px;font-weight:600;font-family:var(--disp);}
+.glossary h4:first-child{margin-top:0;}
+.gitem{font-size:12px;color:var(--text-faint);line-height:1.75;margin-bottom:10px;}
+.gitem b{color:var(--text);font-weight:600;}
+.disclaimer{font-size:11px;color:var(--text-faint);margin-top:14px;padding-top:14px;border-top:1px solid var(--border);line-height:1.7;}
+.scorewrap{display:flex;align-items:center;gap:6px;white-space:nowrap;}
+.scorebar{width:46px;height:5px;background:var(--panel-solid);border-radius:3px;overflow:hidden;border:1px solid var(--border);}
+.scorebar i{display:block;height:100%;}
+.scoreval{font-family:var(--mono);font-size:11px;color:var(--text-dim);}
+.wrbar{width:74px;height:16px;background:var(--panel-solid);border-radius:3px;overflow:hidden;border:1px solid var(--border);position:relative;display:inline-block;vertical-align:middle;}
+.wrbar i{display:block;height:100%;}
+.wrbar b{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-family:var(--mono);color:#fff;text-shadow:0 0 4px #000;}
+.dist{display:flex;align-items:flex-end;gap:2px;height:34px;}
+.dist i{flex:1;border-radius:1px 1px 0 0;min-height:1px;}
+.sig{font-size:10px;font-family:var(--mono);padding:1px 5px;border-radius:4px;}
+.sig.yes{background:var(--up-bg);color:var(--up);} .sig.no{background:rgba(255,255,255,.06);color:var(--text-faint);}
+.modal-overlay{position:fixed;inset:0;background:rgba(2,4,8,.75);backdrop-filter:blur(4px);z-index:60;display:none;align-items:center;justify-content:center;padding:20px;}
+.modal-box{background:var(--panel-solid);border:1px solid var(--border-strong);border-radius:16px;max-width:1020px;width:100%;max-height:92vh;overflow:auto;padding:20px 22px;box-shadow:0 40px 100px -20px rgba(0,0,0,.7);}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:10px;}
+.modal-head h3{font-family:var(--disp);font-size:18px;margin:0;font-weight:700;}
+.modal-close{cursor:pointer;color:var(--text-faint);font-size:16px;border:1px solid var(--border);border-radius:8px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.modal-close:hover{color:var(--text);border-color:var(--cyan);}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:var(--text-dim);margin:10px 0 4px;}
+.legend span{display:inline-flex;align-items:center;gap:5px;}
+.legend i{width:10px;height:10px;border-radius:2px;display:inline-block;}
+.chart-svg-wrap{width:100%;overflow-x:auto;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:8px;margin-top:10px;}
+@media (max-width:1100px){.stats{grid-template-columns:repeat(2,1fr);gap:12px;} .stat{margin-right:0;} table{font-size:11px;}}
+</style>
+</head>
+<body>
+<div class="grid-overlay"></div>
+<div class="wrap">
+  <div class="pagehead">
+    <div class="logo"><svg viewBox="0 0 24 24" fill="none"><path d="M3 17l6-6 4 4 8-8" stroke="#04060a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <h1>TRADING SCAN</h1>
+    <div class="livepill"><span class="livedot"></span> LIVE · BINANCE FUTURES</div>
+  </div>
+
+  <div class="panel">
+    <div class="headrow">
+      <div>
+        <h2>Trading Scan</h2>
+        <div class="sub">USDT 永续 · 全市场 <b id="universeCount">—</b> 个 · 本轮扫描 <b id="scanCount">—</b> 个 · 周期 <b id="tfLabel">1d</b> · Binance 公开行情接口</div>
+      </div>
+      <div class="headctrl">
+        <div class="tfgroup" id="tfGroup">
+          <div class="tfbtn" data-tf="15m">15M</div>
+          <div class="tfbtn" data-tf="30m">30M</div>
+          <div class="tfbtn" data-tf="1h">1H</div>
+          <div class="tfbtn" data-tf="4h">4H</div>
+          <div class="tfbtn active" data-tf="1d">1D</div>
+          <div class="tfbtn" data-tf="1w">1W</div>
+        </div>
+        <button class="btn gold" id="scanBtn" onclick="runScan()">↻ 开始扫描</button>
+      </div>
+    </div>
+
+    <div class="ctrlrow">
+      <input class="inp" id="searchBox" placeholder="搜索标的…" oninput="onSearch(this.value)">
+      <select class="sel" id="scanN">
+        <option value="20">Top 20</option>
+        <option value="40" selected>Top 40</option>
+        <option value="60">Top 60</option>
+        <option value="100">Top 100</option>
+      </select>
+      <select class="sel" id="sampleMode" title="抽样方式">
+        <option value="volume" selected>按成交额取样</option>
+        <option value="listing">按上市时间分层取样</option>
+      </select>
+      <div class="toggle" id="mtfToggle" onclick="toggleMTF()">多周期同向：关</div>
+      <div class="toggle" id="autoToggle" onclick="toggleAuto()">自动刷新：关</div>
+      <div class="toggle" id="alertToggle" onclick="toggleAlerts()">新信号提醒：关</div>
+      <span class="lbl">成本(往返%)</span><input class="inp num" id="costInp" value="0.10" onchange="onCostChange()">
+      <span class="lbl">止损%</span><input class="inp num" id="stopInp" value="3.0" onchange="onCostChange()">
+      <div class="toggle on" id="fundToggle" onclick="toggleFunding()">计入资金费率：开</div>
+      <div class="toggle" id="tgToggle" onclick="openTG()">Telegram 推送：未配置</div>
+      <div class="toggle" id="sensToggle" onclick="toggleSens()">参数敏感性：关</div>
+    </div>
+
+    <div id="alertHost"></div>
+    <div id="errHost"></div>
+
+    <div class="stats">
+      <div class="stat"><div class="label">市场情绪 <span class="src">alternative.me</span></div><div class="val" id="s_fng">—</div></div>
+      <div class="stat"><div class="label">BTC 占全市场份额 <span class="src">CoinGecko</span></div><div class="val" id="s_dom">—</div></div>
+      <div class="stat"><div class="label">稳定币总市值（场内现金代理）<span class="src">CoinGecko</span></div><div class="val" id="s_stable">—</div></div>
+      <div class="stat"><div class="label">扫描池平均资金费率</div><div class="val" id="s_funding">—</div></div>
+      <div class="stat"><div class="label">扫描池 24h 名义成交额</div><div class="val" id="s_vol">—</div></div>
+    </div>
+    <div class="stats-note">以上均为真实公开数据的直接读数或简单合成代理指标，不是发布方原版的专有分档算法，仅供参考，不构成投资建议。</div>
+
+    <div class="progrow">
+      <span class="tag" id="progStatus">尚未扫描</span>
+      <span class="tag" id="progDetail">—</span>
+      <span class="ts" id="tsNow">—</span>
+    </div>
+    <div class="bar-outer"><div class="bar-inner" id="barInner"></div></div>
+
+    <div class="tabs" id="tabs">
+      <div class="tab active" data-tab="overview"><span>总览</span><span class="n" id="cnt_overview">0</span></div>
+      <div class="tab" data-tab="sanjiao"><span>三角</span><span class="n" id="cnt_sanjiao">0</span></div>
+      <div class="tab" data-tab="xingtai"><span>形态</span><span class="n" id="cnt_xingtai">0</span></div>
+      <div class="tab" data-tab="xiebo"><span>谐波</span><span class="n" id="cnt_xiebo">0</span></div>
+      <div class="tab" data-tab="chanlun"><span>缠论</span><span class="n" id="cnt_chanlun">0</span></div>
+      <div class="tab" data-tab="ailiate"><span>艾略特</span><span class="n" id="cnt_ailiate">0</span></div>
+      <div class="tab" data-tab="flow"><span>资金流·预警</span><span class="n" id="cnt_flow">0</span></div>
+      <div class="tab" data-tab="verify"><span>回看验证</span><span class="n" id="cnt_verify">0</span></div>
+      <div class="tab" data-tab="skdj"><span>SKDJ共振</span><span class="n" id="cnt_skdj">0</span></div>
+      <div class="tab" data-tab="jiuzhuan"><span>九转</span><span class="n" id="cnt_jiuzhuan">0</span></div>
+      <div class="tab" data-tab="santong"><span>三通</span><span class="n" id="cnt_santong">0</span></div>
+      <div class="tab" data-tab="combo"><span>组合</span><span class="n" id="cnt_combo">0</span></div>
+      <div class="tab" data-tab="fav"><span>收藏</span><span class="n" id="cnt_fav">0</span></div>
+    </div>
+
+    <div id="sectionHost"></div>
+
+    <div class="glossary">
+      <h4>总览页</h4>
+      <div class="gitem">把三角、形态、谐波、缠论、三通、SKDJ、临界预警的信号<b>按标的合并到一屏</b>，排序权重 = 最高强度分 + 已确认信号数 + 方向一致度 + 高周期同向 + CVD同向。标签中"(暂)"= 仅1根收盘越线尚未确认，"(预警)"= 形态尚未突破、只是资金流已偏向。</div>
+      <div class="gitem"><b>一个必须说明的认知陷阱</b>：多个信号方向一致<b>看起来</b>更可信，但它们并非相互独立的证据——三角、头肩、缠论中枢都是从同一段价格序列推导出来的，本来就高度相关，一致是常态而非巧合。因此"5个信号都看多"不等于胜率是单个信号的5倍，甚至不一定更高。<b>是否真有提升，只能以"回看验证"页的实测数据为准</b>，总览页的排序只是帮你决定先看哪个，不是可信度的量化。</div>
+      <h4>Telegram 推送</h4>
+      <div class="gitem">在控制栏点"Telegram 推送"配置 Bot Token 与 Chat ID（页内有获取步骤）。每轮扫描后若出现<b>新的"已确认突破"</b>信号即推送，消息按标的分组，含形态、方向、强度分、CVD、高周期方向、价格与 Binance 链接。暂破待确认不推送，避免噪音。</div>
+      <div class="gitem"><b>需要配合"自动刷新"一起开</b>，否则只有手动扫描时才会检查新信号。<b>安全提示</b>：Token 保存在本工具的本地存储中，请专门新建机器人、不要复用有其他用途的 Token，随时可在 @BotFather 用 /revoke 撤销。本工具只用它调用 sendMessage。</div>
+      <h4>CVD（累计成交量差额）与持仓量 OI</h4>
+      <div class="gitem"><b>为什么加这两个</b>：形态检测天然滞后——必须等突破发生并连续 2 根收盘确认，届时行情常已走出一段。订单流数据能在价格确认之前反映资金动向，用来部分弥补这个滞后。</div>
+      <div class="gitem"><b>CVD 计算</b>：Binance K线接口自带"主动买入成交量"字段，主动卖出量 = 总量 − 主动买入量，故每根K线的 delta = 2×主动买入 − 总量，累加即 CVD。<b>这是真实的逐笔主动成交方向数据，不是用涨跌推测的近似</b>，且有完整历史深度。表中"CVD"列为近 10 根的净 delta ÷ 同期总成交量（−100%~+100%），衡量这段时间主动买卖的净倾斜程度。</div>
+      <div class="gitem"><b>CVD 背离</b>：价格创新高但 CVD 未同步创新高（顶背离），或价格创新低但 CVD 未同步创新低（底背离）。属于领先信号，但噪音较大，需结合其他证据。</div>
+      <div class="gitem"><b>CVD 已纳入回测验证</b>：回看验证页中带 "<b>+CVD同向</b>" 后缀的行，是同一形态在"突破时 CVD 方向一致"条件下的子集。<b>直接对比它与原始形态的超额，就能看出订单流过滤到底有没有提升</b>——如果两者超额差不多，说明这个过滤没有增加价值。回测中的 CVD 斜率只使用截止当根的数据，无未来信息。</div>
+      <div class="gitem"><b>持仓量 OI 的重要限制</b>：Binance 的 OI 历史接口<b>只提供最近约 30 天</b>，长度不足以支撑长周期回测，因此 <b>OI 只用于当前判读，没有经过历史验证</b>，请视为参考信息而非已验证信号。判读采用经典口径：价涨仓增=新多进场（增量资金推动）、价涨仓减=空头回补（续航力弱）、价跌仓增=新空进场、价跌仓减=多头平仓。</div>
+      <div class="gitem"><b>临界预警</b>：当形态<b>尚未突破</b>、价格距轨道 2.5% 以内、且 CVD 明显偏向该方向时触发。这是"可能即将突破"的提示，<b>本身不是突破信号，会有相当比例不兑现</b>——它用更早的时点换取了更低的确定性，这个取舍需要你自己权衡。该预警<b>未经回测验证</b>（它不对应明确的入场规则）。</div>
+      <h4>资金费率</h4>
+      <div class="gitem">永续合约每 8 小时结算一次资金费。本工具拉取每个标的的<b>真实历史资金费率</b>（最近约 1000 次结算），并按每笔模拟交易的<b>实际持仓时间窗口</b>累加其间发生的结算：做多支付正费率、做空收取正费率，费率为负时反之。这不是用一个平均值近似，而是逐次结算对齐时间戳计算。</div>
+      <div class="gitem">这项对<b>长持有期</b>影响很大：日线持有 20 根即约 60 次结算，牛市中多头费率长期为正，会系统性侵蚀多头收益——不计入的话对做多形态是明显高估。可用开关关闭以对比差异。历史费率接口最多约 1000 条，覆盖不到的更早区间按 0 处理。</div>
+      <h4>样本外检验</h4>
+      <div class="gitem">回测窗口按时间<b>对半切开</b>：前半段样本内、后半段样本外，两段各自与<b>自己时段</b>的随机入场基准比较。<b>只有两段超额都为正才值得关注</b>；样本内亮眼、样本外失效是典型的过拟合特征。这比参数敏感性更硬——后者只说明结果稳不稳，前者才说明规律是否在没见过的数据上继续成立。切分后每段样本量减半，n 很小时结论本身也不可靠。</div>
+      <h4>交易成本与止损模型</h4>
+      <div class="gitem">回测收益现在是<b>净收益</b>：先按方向取符号，再扣除"成本(往返%)"输入框中的费用（默认 0.10%，涵盖开平仓手续费与滑点，可自行调整）。</div>
+      <div class="gitem"><b>止损</b>：每个历史信号从入场后逐根检查，若在到达持有期之前，K线的最低价（做多）或最高价（做空）触及入场价的止损百分比，则按止损价出场，收益记为 −止损% − 成本。<b>当一根K线同时触及止损与更好的价格时，本工具一律假设先触发止损</b>——这是保守（悲观）假设，因为日内先后顺序无法从K线数据还原。止损设为 0 表示不启用止损。</div>
+      <div class="gitem">调整成本或止损后<b>无需重新拉取数据</b>，点击输入框外部即会用已有K线立即重算回测。</div>
+      <h4>统计显著性</h4>
+      <div class="gitem">胜率旁给出 <b>95% Wilson 置信区间</b>（小样本下比常规正态区间更稳健），"超额"旁给出<b>双样本比例 z 检验</b>相对随机入场基准的 p 值。标记为<b>显著</b>仅表示 p &lt; 0.05，即"这个差异纯属偶然的概率低于 5%"。</div>
+      <div class="gitem"><b>请务必理解这个 p 值的局限</b>：本工具同时检验了多个形态 × 多个持有期，属于<b>多重比较</b>，未做 Bonferroni 等校正，因此偶然出现几个 p&lt;0.05 是完全正常的；此外同一标的相邻信号并非独立事件，会让 p 值偏乐观。把它当作"值得进一步研究"的粗筛，而不是结论性证据。</div>
+      <h4>参数敏感性检验</h4>
+      <div class="gitem">开启后会用三组参数各跑一遍回测：<b>宽松</b>（zigzag 3%、量能 1.0×）、<b>基准</b>（4%、1.2×）、<b>严格</b>（5%、1.5×）。如果同一形态在三组参数下的超额差异巨大甚至变号，说明结果<b>对参数高度敏感，很可能是过拟合噪音</b>；若三组结论方向一致，可信度相对更高。这项会让扫描耗时约三倍，默认关闭。</div>
+      <h4>随机入场基准（回看验证的对照组）</h4>
+      <div class="gitem">在同一批标的、同一段窗口内，把<b>每一根</b>符合条件的K线都当作一次入场，统计无条件收益分布，作为"随便挑一根K线进场"的天然胜率。基准同样扣除成本、套用同一止损规则，保证与形态信号可比；各形态的基准按其信号的<b>多空比例加权</b>。表中"<b>超额</b>"= 形态胜率 − 对应基准胜率（百分点 pp）。<b>超额在 ±3pp 以内且不显著的，基本应视为噪音。</b></div>
+      <h4>回看验证的信号触发点</h4>
+      <div class="gitem">各类形态在回测中的"入场时点"定义如下：<b>三角/楔形/头肩/双重顶底</b>——首次达到"已确认突破"（连续2根收盘站稳+放量）那一根；<b>谐波</b>——XABCD 五点齐全、D 点刚刚成立那一根，方向为该形态的看涨/看跌属性；<b>缠论</b>——收盘价首次有效突破最新中枢上沿 ZG（向上）或下沿 ZD（向下）那一根；<b>艾略特</b>——第5浪刚刚完成那一根，方向取<b>与推动浪相反</b>（即预期回调），这是波浪理论的常见用法但属于一种解读，并非唯一。同一形态在 10 根K线内重复触发只记一次。</div>
+      <h4>抽样方式与幸存者偏差</h4>
+      <div class="gitem">默认"按成交额取样"选当前成交额最高的 N 个标的，存在明显<b>幸存者偏差</b>（今天的热门币往往是涨过来的）。改选"<b>按上市时间分层取样</b>"后，会把全部合约按上市日期排序、均匀切成 N 段、每段取一个，让样本覆盖不同上市年份的标的。这只能<b>部分</b>缓解偏差——已下架的合约仍然不在名单里，真正的无偏样本需要包含退市标的的历史数据库，公开接口拿不到。</div>
+      <h4>K线缓存与自动刷新</h4>
+      <div class="gitem">同一标的同一周期的K线会在内存中缓存，有效期约为该周期的一半（如 15M 缓存 7.5 分钟），重复扫描时直接复用，明显加快。自动刷新按周期设定间隔（≤1H 为 5 分钟，4H 为 15 分钟，日线/周线为 60 分钟）；页面关闭即失效。</div>
+      <h4>新信号提醒</h4>
+      <div class="gitem">开启后，每轮扫描会与上一轮结果比对，出现<b>新的"已确认突破"</b>信号时在页面顶部横幅列出；若浏览器授予了通知权限，还会发一条桌面通知。只比对已确认信号，暂破待确认不提醒。</div>
+      <h4>其余算法口径</h4>
+      <div class="gitem"><b>突破确认</b>三档：跟踪中 → 暂破待确认（1根收盘越线）→ 已确认（连续2根收盘站稳且突破根成交量 ≥ 前20根均量×设定倍数）。<b>摆动点</b> zigzag 阈值默认 4%（艾略特 5%）；<b>三角/楔形</b>回归轨道收窄 ≥15%；<b>头肩</b>容差 6%、<b>双重顶底</b>容差 2.5% 且回撤 ≥6%，跨类型按区间重叠度去重后只留最强 2 个；<b>谐波</b> Gartley/Bat/Butterfly/Crab 标准比例区间；<b>缠论</b>包含处理→分型→笔→中枢，线段用简化规则（非唯一权威算法）；<b>艾略特</b>只用三条硬性规则筛候选，允许多解。</div>
+      <div class="gitem"><b>多周期同向过滤</b>：只显示方向与上一级周期一致的信号（15M→1H，30M→2H，1H→4H，4H→1D，1D→1W，1W→1M）。高周期方向优先由该周期已突破形态加权投票判定，无形态时退化为 MA20 位置与斜率。</div>
+      <div class="gitem"><b>SKDJ 共振</b>与<b>九转</b>固定使用日线+周线双周期核对，不随周期开关变化。<b>三通</b> = 日线 EMA120 下方 + RSI14&lt;30 + SKDJ 日/周底部共振。</div>
+      <div class="gitem"><b>图表弹窗</b>：真实K线（自绘 SVG）+ MA20/MA60 + 成交量副图 + RSI(14) 副图，叠加命中形态的趋势线、颈线、谐波折线、中枢箱体与浪型折线。</div>
+    </div>
+
+    <div class="disclaimer">
+      数据来源：Binance USDT-M 永续合约公开行情接口、Alternative.me 恐慌贪婪指数、CoinGecko 全球市场数据。所有形态识别与回测统计均为公开、可复现的规则化算法，不使用随机或占位数据。但技术分析存在算法简化与流派分歧；回测虽已计入成本与止损，仍受幸存者偏差、多重比较、样本非独立、区间有限等因素影响，<b>历史表现不代表未来结果</b>。本工具仅作研究与信息展示用途，不构成任何投资建议，交易风险自负。
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="detailOverlay" onclick="if(event.target===this) closeDetail();">
+  <div class="modal-box" id="detailBox"></div>
+</div>
+
+<script>
+/* ==================== CONFIG / STATE ==================== */
+const FAPI='https://fapi.binance.com';
+const TF_LIMIT={'15m':750,'30m':750,'1h':750,'4h':500,'1d':500,'1w':300};
+const HTF_MAP={'15m':'1h','30m':'2h','1h':'4h','4h':'1d','1d':'1w','1w':'1M'};
+const HTF_LABEL={'15m':'1小时','30m':'2小时','1h':'4小时','4h':'日线','1d':'周线','1w':'月线'};
+const TF_MS={'15m':9e5,'30m':18e5,'1h':36e5,'2h':72e5,'4h':144e5,'1d':864e5,'1w':6048e5,'1M':2592e6};
+const AUTO_MS={'15m':3e5,'30m':3e5,'1h':3e5,'4h':9e5,'1d':36e5,'1w':36e5};
+const BT_MAX_BARS=400;
+const HORIZONS=[5,10,20];
+const PARAM_SETS=[
+  {name:'宽松', zz:0.03, volMult:1.0},
+  {name:'基准', zz:0.04, volMult:1.2},
+  {name:'严格', zz:0.05, volMult:1.5},
+];
+let PARAMS={zz:0.04, volMult:1.2};
+
+const state={
+  universe:[], onboard:{}, tickers:{}, results:{}, scanned:[],
+  activeTab:'overview', sanjiaoFilter:'all', tf:'1d', query:'',
+  watch:new Set(), scanning:false, globals:{}, backtest:null, sens:null,
+  mtfOnly:false, autoOn:false, alertsOn:false, sensOn:false,
+  cost:0.10, stop:3.0, prevSignals:null, alerts:[], autoTimer:null, fundingOn:true,
+};
+const klineCache=new Map();
+
+/* ==================== UTILS ==================== */
+async function fetchJSON(u){ const r=await fetch(u); if(!r.ok) throw new Error(u+' -> HTTP '+r.status); return r.json(); }
+async function pMap(items,fn,conc){
+  const ret=new Array(items.length); let i=0;
+  async function w(){ while(i<items.length){ const k=i++; try{ ret[k]=await fn(items[k],k); }catch(e){ ret[k]=null; } } }
+  await Promise.all(Array.from({length:Math.min(conc,items.length)},w)); return ret;
+}
+function fmtUSD(n){
+  if(n===null||n===undefined||isNaN(n)) return '—';
+  if(n>=1e9) return '$'+(n/1e9).toFixed(2)+'B';
+  if(n>=1e6) return '$'+(n/1e6).toFixed(2)+'M';
+  if(n>=1e3) return '$'+(n/1e3).toFixed(1)+'K';
+  return '$'+n.toFixed(2);
+}
+function clamp(n,a,b){ return Math.max(a,Math.min(b,n)); }
+function yieldUI(){ return new Promise(function(r){ setTimeout(r,0); }); }
+
+/* ==================== STATS ==================== */
+function wilsonCI(k,n,z){
+  z=z||1.96; if(!n) return [0,0];
+  const p=k/n, d=1+z*z/n;
+  const c=(p+z*z/(2*n))/d;
+  const half=(z*Math.sqrt(p*(1-p)/n + z*z/(4*n*n)))/d;
+  return [clamp((c-half)*100,0,100), clamp((c+half)*100,0,100)];
+}
+function normCdf(x){
+  const t=1/(1+0.2316419*Math.abs(x));
+  const d=0.3989423*Math.exp(-x*x/2);
+  let p=d*t*(0.3193815+t*(-0.3565638+t*(1.781478+t*(-1.821256+t*1.330274))));
+  return x>0?1-p:p;
+}
+function twoPropP(k1,n1,k2,n2){
+  if(!n1||!n2) return 1;
+  const p1=k1/n1, p2=k2/n2, pp=(k1+k2)/(n1+n2);
+  const se=Math.sqrt(pp*(1-pp)*(1/n1+1/n2));
+  if(se===0) return 1;
+  const z=(p1-p2)/se;
+  return 2*(1-normCdf(Math.abs(z)));
+}
+
+/* ==================== INDICATORS ==================== */
+function smaSeries(a,n,m){ const o=new Array(a.length); o[0]=a[0]; for(let i=1;i<a.length;i++) o[i]=(m*a[i]+(n-m)*o[i-1])/n; return o; }
+function computeSKDJ(h,l,c,N,M){
+  N=N||9; M=M||3; const len=c.length; const rsv=new Array(len).fill(50);
+  for(let i=0;i<len;i++){ const s=Math.max(0,i-N+1); const hh=Math.max.apply(null,h.slice(s,i+1)); const ll=Math.min.apply(null,l.slice(s,i+1)); rsv[i]=hh===ll?50:(c[i]-ll)/(hh-ll)*100; }
+  const K=smaSeries(smaSeries(rsv,M,1),M,1); return {K:K, D:smaSeries(K,M,1)};
+}
+function computeTD(c){
+  let up=0,dn=0,res=[];
+  for(let i=0;i<c.length;i++){
+    if(i<4){ res.push({dir:null,count:0}); continue; }
+    if(c[i]>c[i-4]){ up++; dn=0; } else if(c[i]<c[i-4]){ dn++; up=0; } else { up=0; dn=0; }
+    if(up>9) up=9; if(dn>9) dn=9;
+    res.push({dir:up>0?'up':(dn>0?'down':null), count:up>0?up:dn});
+  }
+  return res;
+}
+function ema(a,p){ const k=2/(p+1); const o=[a[0]]; for(let i=1;i<a.length;i++) o.push(a[i]*k+o[i-1]*(1-k)); return o; }
+function smaArr(a,p){ const o=new Array(a.length).fill(null); let s=0; for(let i=0;i<a.length;i++){ s+=a[i]; if(i>=p) s-=a[i-p]; if(i>=p-1) o[i]=s/p; } return o; }
+function rsi(c,p){
+  p=p||14; const o=new Array(c.length).fill(null); if(c.length<=p) return o;
+  let g=0,l=0; for(let i=1;i<=p;i++){ const d=c[i]-c[i-1]; if(d>=0) g+=d; else l-=d; }
+  let ag=g/p, al=l/p; o[p]=100-100/(1+(al===0?100:ag/al));
+  for(let i=p+1;i<c.length;i++){
+    const d=c[i]-c[i-1]; ag=(ag*(p-1)+(d>0?d:0))/p; al=(al*(p-1)+(d<0?-d:0))/p;
+    o[i]=100-100/(1+(al===0?100:ag/al));
+  }
+  return o;
+}
+function linreg(pts){
+  const n=pts.length; let sx=0,sy=0,sxy=0,sxx=0;
+  pts.forEach(function(p){ sx+=p.x; sy+=p.y; sxy+=p.x*p.y; sxx+=p.x*p.x; });
+  const den=(n*sxx-sx*sx)||1e-9; const sl=(n*sxy-sx*sy)/den;
+  return {slope:sl, intercept:(sy-sl*sx)/n};
+}
+function findPivots(a,w,mode){
+  const r=[];
+  for(let i=w;i<a.length-w;i++){
+    let ok=true;
+    for(let k=1;k<=w;k++){
+      if(mode==='high'){ if(a[i]<a[i-k]||a[i]<a[i+k]){ok=false;break;} }
+      else { if(a[i]>a[i-k]||a[i]>a[i+k]){ok=false;break;} }
+    }
+    if(ok) r.push(i);
+  }
+  return r;
+}
+
+/* ===== breakout confirmation ===== */
+function volConfirmAt(bars,idx,P){
+  const s=Math.max(0,idx-20), prev=bars.slice(s,idx);
+  if(!prev.length) return false;
+  const avg=prev.reduce(function(a,b){return a+b.v;},0)/prev.length;
+  return avg>0 && bars[idx].v>=avg*(P||PARAMS).volMult;
+}
+function confirmBreak(bars,levelAt,dir,P){
+  const n=bars.length; if(n<2) return {state:'wait'};
+  const b1=dir==='up'? bars[n-1].c>levelAt(n-1)*1.002 : bars[n-1].c<levelAt(n-1)*0.998;
+  if(!b1) return {state:'wait'};
+  const b2=dir==='up'? bars[n-2].c>levelAt(n-2)*1.002 : bars[n-2].c<levelAt(n-2)*0.998;
+  const vol=volConfirmAt(bars,n-1,P)||volConfirmAt(bars,n-2,P);
+  if(b2&&vol) return {state:'confirmed'};
+  return {state:'tentative'};
+}
+function brkChip(bs,dir){
+  if(!bs) return statusChip('wait','—');
+  if(bs.state==='confirmed') return statusChip(dir, dir==='up'?'已确认·上破':'已确认·下破');
+  if(bs.state==='tentative') return '<span class="status tent">暂破·待确认</span>';
+  return statusChip('wait','跟踪中·未突破');
+}
+
+/* ==================== PATTERNS ==================== */
+function detectTriangle(bars,P){
+  P=P||PARAMS;
+  const rec=bars.slice(-60); if(rec.length<25) return null;
+  const off=bars.length-rec.length;
+  const hs=rec.map(function(k){return k.h;}), ls=rec.map(function(k){return k.l;}), cs=rec.map(function(k){return k.c;});
+  const hi=findPivots(hs,2,'high'), li=findPivots(ls,2,'low');
+  if(hi.length<2||li.length<2) return null;
+  const hP=hi.slice(-4).map(function(i){return {x:i+off,y:hs[i]};});
+  const lP=li.slice(-4).map(function(i){return {x:i+off,y:ls[i]};});
+  const rh=linreg(hP), rl=linreg(lP);
+  const lastX=bars.length-1, firstX=Math.min(hP[0].x,lP[0].x);
+  const w0=(rh.slope*firstX+rh.intercept)-(rl.slope*firstX+rl.intercept);
+  const w1=(rh.slope*lastX+rh.intercept)-(rl.slope*lastX+rl.intercept);
+  if(w0<=0||w1<=0) return null;
+  const narrow=1-w1/w0; if(narrow<0.15) return null;
+  const range=Math.max.apply(null,hs)-Math.min.apply(null,ls), eps=range*0.0025;
+  let type;
+  if(Math.abs(rh.slope)<eps&&rl.slope>eps) type='上升三角';
+  else if(rh.slope<-eps&&Math.abs(rl.slope)<eps) type='下降三角';
+  else if(rh.slope<-eps&&rl.slope>eps) type='收敛三角';
+  else return null;
+  const upFn=function(i){return rh.slope*i+rh.intercept;}, loFn=function(i){return rl.slope*i+rl.intercept;};
+  const bu=confirmBreak(bars,upFn,'up',P), bd=confirmBreak(bars,loFn,'down',P);
+  let dir=null, bs={state:'wait'};
+  if(bu.state!=='wait'){ dir='up'; bs=bu; } else if(bd.state!=='wait'){ dir='down'; bs=bd; }
+  const un=upFn(lastX), ln=loFn(lastX), lc=cs[cs.length-1];
+  const apexX=(rh.slope-rl.slope)!==0?(rh.intercept-rl.intercept)/(rl.slope-rh.slope):null;
+  const volAvg=rec.slice(0,-1).reduce(function(a,k){return a+k.v;},0)/Math.max(1,rec.length-1);
+  const vr=volAvg?rec[rec.length-1].v/volAvg:null;
+  const sb=bs.state==='confirmed'?40:(bs.state==='tentative'?18:0);
+  return {type:type, dir:dir, brk:bs, narrow:(narrow*100).toFixed(1),
+    position:clamp(((lc-ln)/(un-ln))*100,0,100).toFixed(1),
+    apexDist:apexX!==null?Math.round(apexX-lastX):null, touchH:hP.length, touchL:lP.length, volRatio:vr,
+    score:clamp(12+sb+Math.min(28,narrow*30)+(vr?Math.min(15,vr*8):5),0,100),
+    upper:{slope:rh.slope,intercept:rh.intercept}, lower:{slope:rl.slope,intercept:rl.intercept}, xRange:[firstX,lastX]};
+}
+function detectWedge(bars,P){
+  P=P||PARAMS;
+  const rec=bars.slice(-60); if(rec.length<25) return null;
+  const off=bars.length-rec.length;
+  const hs=rec.map(function(k){return k.h;}), ls=rec.map(function(k){return k.l;});
+  const hi=findPivots(hs,2,'high'), li=findPivots(ls,2,'low');
+  if(hi.length<2||li.length<2) return null;
+  const hP=hi.slice(-4).map(function(i){return {x:i+off,y:hs[i]};});
+  const lP=li.slice(-4).map(function(i){return {x:i+off,y:ls[i]};});
+  const rh=linreg(hP), rl=linreg(lP);
+  const range=Math.max.apply(null,hs)-Math.min.apply(null,ls), eps=range*0.003;
+  const lastX=bars.length-1, firstX=Math.min(hP[0].x,lP[0].x);
+  const w0=(rh.slope*firstX+rh.intercept)-(rl.slope*firstX+rl.intercept);
+  const w1=(rh.slope*lastX+rh.intercept)-(rl.slope*lastX+rl.intercept);
+  if(w0<=0||w1<=0) return null;
+  const narrow=1-w1/w0; if(narrow<0.15) return null;
+  let type=null,dir=null;
+  if(rh.slope>eps&&rl.slope>eps){ type='上升楔形'; dir='down'; }
+  else if(rh.slope<-eps&&rl.slope<-eps){ type='下降楔形'; dir='up'; }
+  else return null;
+  const upFn=function(i){return rh.slope*i+rh.intercept;}, loFn=function(i){return rl.slope*i+rl.intercept;};
+  const bs=dir==='down'?confirmBreak(bars,loFn,'down',P):confirmBreak(bars,upFn,'up',P);
+  const sb=bs.state==='confirmed'?40:(bs.state==='tentative'?18:0);
+  return {type:type, dir:dir, brk:bs, score:clamp(10+sb+Math.min(28,narrow*30)+12,0,100),
+    upper:{slope:rh.slope,intercept:rh.intercept}, lower:{slope:rl.slope,intercept:rl.intercept}, xRange:[firstX,lastX]};
+}
+function zigzag(bars,pct){
+  if(bars.length<2) return [];
+  const pv=[]; let tr=0, ei=0, ep=bars[0].c, lp=bars[0].c;
+  for(let i=1;i<bars.length;i++){
+    const p=bars[i].c;
+    if(tr===0){
+      if(p>=lp*(1+pct)){ tr=1; ei=i; ep=p; } else if(p<=lp*(1-pct)){ tr=-1; ei=i; ep=p; }
+    } else if(tr===1){
+      if(p>ep){ ep=p; ei=i; }
+      else if(p<=ep*(1-pct)){ pv.push({idx:ei,price:ep,type:'H'}); tr=-1; lp=ep; ei=i; ep=p; }
+    } else {
+      if(p<ep){ ep=p; ei=i; }
+      else if(p>=ep*(1+pct)){ pv.push({idx:ei,price:ep,type:'L'}); tr=1; lp=ep; ei=i; ep=p; }
+    }
+  }
+  pv.push({idx:ei,price:ep,type:tr===1?'H':(tr===-1?'L':(ep>=bars[0].c?'H':'L')),provisional:true});
+  return pv;
+}
+function detectStructural(bars,P){
+  P=P||PARAMS;
+  const pv=zigzag(bars,P.zz), out=[], n=pv.length;
+  for(let i=0;i+4<n;i++){
+    const w=pv.slice(i,i+5), t=w.map(function(p){return p.type;}).join('');
+    if(t==='HLHLH'||t==='LHLHL'){
+      const s1=w[0],t1=w[1],hd=w[2],t2=w[3],s2=w[4], isTop=t==='HLHLH';
+      const ok=isTop?(hd.price>s1.price&&hd.price>s2.price):(hd.price<s1.price&&hd.price<s2.price);
+      if(!ok) continue;
+      const diff=Math.abs(s1.price-s2.price)/((s1.price+s2.price)/2);
+      if(diff>=0.06) continue;
+      const sl=(t2.price-t1.price)/((t2.idx-t1.idx)||1);
+      const neckFn=function(i){ return t1.price+sl*(i-t1.idx); };
+      const bs=confirmBreak(bars,neckFn,isTop?'down':'up',P);
+      const fr=Math.max(0,20-(bars.length-1-s2.idx));
+      const sb=bs.state==='confirmed'?45:(bs.state==='tentative'?18:8);
+      out.push({type:isTop?'头肩顶':'头肩底', dir:isTop?'down':'up', brk:bs, lastIdx:s2.idx,
+        score:clamp(sb+(1-diff/0.06)*32+fr,0,100), points:w, neckFn:neckFn, span:[w[0].idx,s2.idx]});
+    }
+  }
+  for(let i=0;i+2<n;i++){
+    const w=pv.slice(i,i+3), t=w.map(function(p){return p.type;}).join('');
+    if(t==='HLH'||t==='LHL'){
+      const isTop=t==='HLH', p1=w[0], md=w[1], p2=w[2];
+      const diff=Math.abs(p1.price-p2.price)/((p1.price+p2.price)/2);
+      const dep=isTop?(Math.min(p1.price,p2.price)-md.price)/Math.min(p1.price,p2.price):(md.price-Math.max(p1.price,p2.price))/md.price;
+      if(diff>=0.025||dep<=0.06) continue;
+      const lvl=md.price, neckFn=function(){ return lvl; };
+      const bs=confirmBreak(bars,neckFn,isTop?'down':'up',P);
+      const fr=Math.max(0,20-(bars.length-1-p2.idx));
+      const sb=bs.state==='confirmed'?45:(bs.state==='tentative'?18:8);
+      out.push({type:isTop?'双重顶':'双重底', dir:isTop?'down':'up', brk:bs, lastIdx:p2.idx,
+        score:clamp(sb+(1-diff/0.025)*18+Math.min(15,dep*100)+fr,0,100), points:w, neckFn:neckFn, span:[p1.idx,p2.idx]});
+    }
+  }
+  const wd=detectWedge(bars,P); if(wd) out.push(wd);
+  const byType={};
+  out.forEach(function(p){ if(!byType[p.type]||p.score>byType[p.type].score) byType[p.type]=p; });
+  const arr=Object.values(byType).sort(function(a,b){return b.score-a.score;});
+  const kept=[];
+  arr.forEach(function(p){
+    const sp=p.span||p.xRange;
+    const dup=kept.some(function(q){
+      const sq=q.span||q.xRange; if(!sp||!sq) return false;
+      const ov=Math.max(0,Math.min(sp[1],sq[1])-Math.max(sp[0],sq[0]));
+      return ov/Math.max(1,Math.min(sp[1]-sp[0],sq[1]-sq[0]))>0.7;
+    });
+    if(!dup) kept.push(p);
+  });
+  return kept.slice(0,2);
+}
+const HARMONIC_DEFS=[
+  {name:'Gartley 加特利', ab:[0.55,0.69], bc:[0.35,0.90], cd:[1.10,1.70], xd:[0.75,0.82]},
+  {name:'Bat 蝙蝠',       ab:[0.35,0.53], bc:[0.35,0.90], cd:[1.55,2.65], xd:[0.83,0.90]},
+  {name:'Butterfly 蝴蝶', ab:[0.72,0.82], bc:[0.35,0.90], cd:[1.55,2.30], xd:[1.22,1.65]},
+  {name:'Crab 螃蟹',      ab:[0.35,0.65], bc:[0.35,0.90], cd:[2.15,3.65], xd:[1.55,1.65]},
+];
+function detectHarmonics(bars,P){
+  P=P||PARAMS;
+  const pv=zigzag(bars,P.zz), res=[];
+  for(let i=0;i+4<pv.length;i++){
+    const w=pv.slice(i,i+5), ty=w.map(function(p){return p.type;});
+    let alt=true; for(let k=1;k<5;k++) if(ty[k]===ty[k-1]) alt=false;
+    if(!alt) continue;
+    const X=w[0],A=w[1],B=w[2],C=w[3],D=w[4];
+    const XA=Math.abs(A.price-X.price),AB=Math.abs(B.price-A.price),BC=Math.abs(C.price-B.price),CD=Math.abs(D.price-C.price);
+    if(XA===0||AB===0||BC===0) continue;
+    const r1=AB/XA,r2=BC/AB,r3=CD/BC,r4=Math.abs(D.price-X.price)/XA;
+    HARMONIC_DEFS.forEach(function(d){
+      if(r1>=d.ab[0]&&r1<=d.ab[1]&&r2>=d.bc[0]&&r2<=d.bc[1]&&r3>=d.cd[0]&&r3<=d.cd[1]&&r4>=d.xd[0]&&r4<=d.xd[1]){
+        const q1=1-Math.min(1,Math.abs(r1-(d.ab[0]+d.ab[1])/2)/(((d.ab[1]-d.ab[0])/2)||1));
+        const q2=1-Math.min(1,Math.abs(r4-(d.xd[0]+d.xd[1])/2)/(((d.xd[1]-d.xd[0])/2)||1));
+        res.push({pattern:d.name, status:'completed', bull:X.type==='L', lastIdx:D.idx, dPrice:D.price,
+          score:clamp(40+q1*20+q2*20+Math.max(0,20-(bars.length-1-D.idx)),0,100), points:[X,A,B,C,D]});
+      }
+    });
+  }
+  if(pv.length>=4){
+    const w=pv.slice(-4), ty=w.map(function(p){return p.type;});
+    let alt=true; for(let k=1;k<4;k++) if(ty[k]===ty[k-1]) alt=false;
+    if(alt){
+      const X=w[0],A=w[1],B=w[2],C=w[3];
+      const XA=Math.abs(A.price-X.price),AB=Math.abs(B.price-A.price),BC=Math.abs(C.price-B.price);
+      if(XA>0&&AB>0){
+        const r1=AB/XA,r2=BC/AB,dx=A.price>X.price?1:-1;
+        HARMONIC_DEFS.forEach(function(d){
+          if(r1>=d.ab[0]&&r1<=d.ab[1]&&r2>=d.bc[0]&&r2<=d.bc[1]){
+            const a=A.price-dx*d.xd[0]*XA, b=A.price-dx*d.xd[1]*XA;
+            const q=1-Math.min(1,Math.abs(r1-(d.ab[0]+d.ab[1])/2)/(((d.ab[1]-d.ab[0])/2)||1));
+            res.push({pattern:d.name, status:'forming', bull:X.type==='L', lastIdx:C.idx,
+              przLow:Math.min(a,b), przHigh:Math.max(a,b),
+              score:clamp(22+q*25+Math.max(0,15-(bars.length-1-C.idx)),0,100), points:[X,A,B,C]});
+          }
+        });
+      }
+    }
+  }
+  return res.sort(function(a,b){return b.score-a.score;}).slice(0,3);
+}
+function detectElliott(bars){
+  const pv=zigzag(bars,0.05), cs=[];
+  for(let i=0;i+5<pv.length;i++){
+    const p=pv.slice(i,i+6), ty=p.map(function(x){return x.type;});
+    let alt=true; for(let k=1;k<6;k++) if(ty[k]===ty[k-1]) alt=false;
+    if(!alt) continue;
+    const up=p[1].price>p[0].price;
+    if(ty[0]!==(up?'L':'H')) continue;
+    const w1=Math.abs(p[1].price-p[0].price), w3=Math.abs(p[3].price-p[2].price), w5=Math.abs(p[5].price-p[4].price);
+    const r1=up?p[2].price>p[0].price:p[2].price<p[0].price;
+    const r3=up?p[4].price>p[1].price:p[4].price<p[1].price;
+    if(r1&&!(w3<w1&&w3<w5)&&r3){
+      cs.push({dir:up?'up':'down', points:p, w3w1:(w3/w1).toFixed(2), w5w3:(w5/w3).toFixed(2),
+        endIdx:p[5].idx, score:clamp(40+clamp((w3/w1-1)*15,0,30)+Math.max(0,30-(bars.length-1-p[5].idx)),0,100)});
+    }
+  }
+  return cs.sort(function(a,b){return b.score-a.score;}).slice(0,2);
+}
+function mergeInclusion(bars){
+  const m=[{h:bars[0].h,l:bars[0].l,startIdx:0,endIdx:0}];
+  for(let i=1;i<bars.length;i++){
+    const c=bars[i], last=m[m.length-1];
+    if((c.h<=last.h&&c.l>=last.l)||(c.h>=last.h&&c.l<=last.l)){
+      let d=1; if(m.length>=2) d=last.h>m[m.length-2].h?1:-1;
+      if(d>=0){ last.h=Math.max(last.h,c.h); last.l=Math.max(last.l,c.l); }
+      else { last.h=Math.min(last.h,c.h); last.l=Math.min(last.l,c.l); }
+      last.endIdx=i;
+    } else m.push({h:c.h,l:c.l,startIdx:i,endIdx:i});
+  }
+  return m;
+}
+function findFenxing(m){
+  const f=[];
+  for(let i=1;i<m.length-1;i++){
+    if(m[i].h>m[i-1].h&&m[i].h>m[i+1].h) f.push({type:'top',idx:i,price:m[i].h,kIdx:m[i].endIdx});
+    else if(m[i].l<m[i-1].l&&m[i].l<m[i+1].l) f.push({type:'bottom',idx:i,price:m[i].l,kIdx:m[i].startIdx});
+  }
+  return f;
+}
+function buildBi(fx){
+  if(!fx.length) return []; const b=[]; let cur=fx[0];
+  for(let i=1;i<fx.length;i++){
+    const f=fx[i];
+    if(f.type===cur.type){
+      if((f.type==='top'&&f.price>cur.price)||(f.type==='bottom'&&f.price<cur.price)) cur=f;
+      continue;
+    }
+    if(f.idx-cur.idx>=4){ b.push({from:cur,to:f}); cur=f; }
+  }
+  return b;
+}
+function buildZhongshu(bis){
+  const z=[];
+  for(let i=0;i+2<bis.length;i++){
+    const r=[bis[i],bis[i+1],bis[i+2]].map(function(x){ return {hi:Math.max(x.from.price,x.to.price), lo:Math.min(x.from.price,x.to.price)}; });
+    const ZG=Math.min(r[0].hi,r[1].hi,r[2].hi), ZD=Math.max(r[0].lo,r[1].lo,r[2].lo);
+    if(ZG>ZD) z.push({ZG:ZG,ZD:ZD,startIdx:bis[i].from.kIdx,endIdx:bis[i+2].to.kIdx});
+  }
+  return z;
+}
+function buildDuan(bis){
+  if(!bis.length) return []; const d=[];
+  let st=bis[0].from, dir=bis[0].to.price>bis[0].from.price?1:-1, ex=bis[0].to;
+  for(let i=1;i<bis.length;i++){
+    const b=bis[i], bd=b.to.price>b.from.price?1:-1;
+    if(bd===dir){ if((dir===1&&b.to.price>ex.price)||(dir===-1&&b.to.price<ex.price)) ex=b.to; }
+    else if((dir===1&&b.to.price<st.price)||(dir===-1&&b.to.price>st.price)){
+      d.push({from:st,to:ex,dir:dir}); st=ex; dir=bd; ex=b.to;
+    }
+  }
+  d.push({from:st,to:ex,dir:dir});
+  return d;
+}
+function detectChan(bars){
+  const m=mergeInclusion(bars), fx=findFenxing(m), bis=buildBi(fx), zs=buildZhongshu(bis), du=buildDuan(bis);
+  let score=0, brkDir=null;
+  if(zs.length){
+    const last=zs[zs.length-1], lc=bars[bars.length-1].c, pc=bars[bars.length-2]?bars[bars.length-2].c:lc;
+    score=clamp(30+Math.min(30,bis.length*3)+Math.max(0,40-(bars.length-1-last.endIdx)),0,100);
+    if(lc>last.ZG&&pc<=last.ZG) brkDir='up';
+    else if(lc<last.ZD&&pc>=last.ZD) brkDir='down';
+  }
+  return {merged:m, fx:fx, bis:bis, zs:zs, duans:du, score:score, brkDir:brkDir};
+}
+
+/* ==================== ORDER FLOW: CVD & OPEN INTEREST ==================== */
+// Per-bar taker delta = takerBuy - takerSell = 2*takerBuy - volume. CVD = running sum.
+function computeCVD(bars){
+  const d=new Array(bars.length), c=new Array(bars.length);
+  let run=0;
+  for(let i=0;i<bars.length;i++){
+    const tb=isNaN(bars[i].tb)?bars[i].v/2:bars[i].tb;
+    d[i]=2*tb-bars[i].v; run+=d[i]; c[i]=run;
+  }
+  return {delta:d, cvd:c};
+}
+// Normalized CVD slope over the last n bars: net delta / total volume in that span (−1..1).
+function cvdSlope(bars,cvdArr,n){
+  n=n||10; const len=bars.length; if(len<n+1) return 0;
+  const net=cvdArr[len-1]-cvdArr[len-1-n];
+  let vol=0; for(let i=len-n;i<len;i++) vol+=bars[i].v;
+  return vol>0?clamp(net/vol,-1,1):0;
+}
+// Divergence: price makes a higher high but CVD does not (bearish), or lower low but CVD does not (bullish).
+function cvdDivergence(bars,cvdArr,P){
+  P=P||PARAMS;
+  const pv=zigzag(bars,P.zz);
+  if(pv.length<3) return null;
+  const last=pv[pv.length-1], prevSame=(function(){
+    for(let i=pv.length-2;i>=0;i--) if(pv[i].type===last.type) return pv[i];
+    return null;
+  })();
+  if(!prevSame) return null;
+  const cLast=cvdArr[last.idx], cPrev=cvdArr[prevSame.idx];
+  const age=bars.length-1-last.idx;
+  if(age>15) return null;
+  if(last.type==='H' && last.price>prevSame.price && cLast<cPrev)
+    return {dir:'down', kind:'顶背离', priceFrom:prevSame.price, priceTo:last.price, idx:last.idx, age:age};
+  if(last.type==='L' && last.price<prevSame.price && cLast>cPrev)
+    return {dir:'up', kind:'底背离', priceFrom:prevSame.price, priceTo:last.price, idx:last.idx, age:age};
+  return null;
+}
+const OI_PERIOD={'15m':'15m','30m':'30m','1h':'1h','4h':'4h','1d':'1d','1w':'1d'};
+async function loadOI(sym,period){
+  const key='OI|'+sym+'|'+period, now=Date.now(), hit=klineCache.get(key);
+  if(hit&&now-hit.t<9e5) return hit.d;
+  try{
+    const a=await fetchJSON(FAPI+'/futures/data/openInterestHist?symbol='+sym+'&period='+period+'&limit=500');
+    const d=a.map(function(x){ return {t:x.timestamp, oi:parseFloat(x.sumOpenInterest), val:parseFloat(x.sumOpenInterestValue)}; })
+             .filter(function(x){ return !isNaN(x.oi); });
+    klineCache.set(key,{t:now,d:d});
+    return d;
+  }catch(e){ return []; }
+}
+function oiChange(oi,n){
+  if(!oi||oi.length<n+1) return null;
+  const a=oi[oi.length-1-n].oi, b=oi[oi.length-1].oi;
+  return a>0?(b/a-1)*100:null;
+}
+// Classic price/OI reading: rising price + rising OI = new money; rising price + falling OI = short covering.
+function oiReading(priceChg,oiChg){
+  if(oiChg===null||priceChg===null) return null;
+  const pUp=priceChg>0, oUp=oiChg>0;
+  if(pUp&&oUp) return {label:'新多进场', tone:'up', note:'价涨仓增：增量资金推动，趋势相对扎实'};
+  if(pUp&&!oUp) return {label:'空头回补', tone:'wait', note:'价涨仓减：多为平空推动，续航力偏弱'};
+  if(!pUp&&oUp) return {label:'新空进场', tone:'down', note:'价跌仓增：增量空头介入'};
+  return {label:'多头平仓', tone:'wait', note:'价跌仓减：多为多头离场，非新增空头'};
+}
+// EARLY WARNING — fires while a pattern is still unbroken, so it leads the confirmation by design.
+function earlyWarning(r){
+  const out=[];
+  const bars=r.bars, n=bars.length-1, price=bars[n].c;
+  const cs=r.cvdSlope, oiC=r.oiChg10;
+  function near(level,dir,label){
+    if(!level||!isFinite(level)) return;
+    const dist=(level-price)/price*100;
+    const within=Math.abs(dist)<=2.5;
+    if(!within) return;
+    const flowAgrees = dir==='up' ? cs>0.05 : cs<-0.05;
+    if(!flowAgrees) return;
+    out.push({label:label, dir:dir, dist:dist, cvd:cs, oi:oiC});
+  }
+  if(r.triangle){
+    const t=r.triangle;
+    if(t.brk.state==='wait'){
+      near(t.upper.slope*n+t.upper.intercept,'up','三角上轨');
+      near(t.lower.slope*n+t.lower.intercept,'down','三角下轨');
+    }
+  }
+  (r.structural||[]).forEach(function(p){
+    if(p.brk&&p.brk.state==='wait'&&p.neckFn) near(p.neckFn(n),p.dir,p.type+'颈线');
+  });
+  if(r.chan&&r.chan.zs&&r.chan.zs.length){
+    const z=r.chan.zs[r.chan.zs.length-1];
+    if(price<=z.ZG&&price>=z.ZD){ near(z.ZG,'up','中枢上沿'); near(z.ZD,'down','中枢下沿'); }
+  }
+  return out;
+}
+/* ==================== HTF BIAS ==================== */
+function computeHtfBias(hb){
+  if(!hb||hb.length<30) return {dir:'neutral',why:'高周期数据不足'};
+  const votes=[];
+  const t=detectTriangle(hb);
+  if(t&&t.dir&&t.brk.state!=='wait') votes.push({dir:t.dir,w:t.score,why:'高周期'+t.type});
+  detectStructural(hb).forEach(function(p){ if(p.brk&&p.brk.state!=='wait') votes.push({dir:p.dir,w:p.score,why:'高周期'+p.type}); });
+  if(votes.length){
+    let u=0,d=0; votes.forEach(function(v){ if(v.dir==='up') u+=v.w; else d+=v.w; });
+    const top=votes.sort(function(a,b){return b.w-a.w;})[0];
+    if(u>d*1.2) return {dir:'up',why:top.why};
+    if(d>u*1.2) return {dir:'down',why:top.why};
+    return {dir:'neutral',why:'高周期形态多空抵消'};
+  }
+  const cs=hb.map(function(b){return b.c;}), ma=smaArr(cs,20);
+  const last=cs[cs.length-1], m=ma[ma.length-1], mp=ma[Math.max(0,ma.length-6)];
+  if(m===null||mp===null) return {dir:'neutral',why:'高周期均线数据不足'};
+  if(last>m&&m>mp) return {dir:'up',why:'高周期价在MA20上方且均线上行'};
+  if(last<m&&m<mp) return {dir:'down',why:'高周期价在MA20下方且均线下行'};
+  return {dir:'neutral',why:'高周期趋势不明确'};
+}
+function mtfPass(dir,r){ if(!state.mtfOnly) return true; if(!dir) return false; return r.htfBias&&r.htfBias.dir===dir; }
+
+/* ==================== BACKTEST ==================== */
+function btRange(bars){
+  const mh=Math.max.apply(null,HORIZONS);
+  const end=bars.length-1-mh;
+  return {start:Math.max(80,end-BT_MAX_BARS+1), end:end};
+}
+// Split point: signals at or before midIdx are in-sample, after are out-of-sample.
+function btMid(bars){ const r=btRange(bars); return Math.floor((r.start+r.end)/2); }
+// Sum funding rates settled in (tStart, tEnd]. Longs pay a positive rate; shorts receive it.
+function fundingCost(fund,tStart,tEnd,dir){
+  if(!fund||!fund.length) return 0;
+  let s=0;
+  for(let i=0;i<fund.length;i++){
+    const f=fund[i];
+    if(f.t>tStart&&f.t<=tEnd) s+=f.r;
+    else if(f.t>tEnd) break;
+  }
+  const pct=s*100;
+  return dir==='up'? pct : -pct;   // cost in % of notional
+}
+// Simulate one trade. Cost deducted; stop-loss checked bar by bar (pessimistic: stop assumed hit first);
+// funding charged for the settlements that actually fall inside the holding window.
+function simulate(bars,t,h,dir,cost,stop,fund){
+  const entry=bars[t].c;
+  let exitIdx=null, raw=null;
+  if(stop>0){
+    for(let k=t+1;k<=t+h&&k<bars.length;k++){
+      const hit = dir==='up' ? bars[k].l<=entry*(1-stop/100) : bars[k].h>=entry*(1+stop/100);
+      if(hit){ exitIdx=k; raw=-stop; break; }
+    }
+  }
+  if(exitIdx===null){
+    const ex=bars[t+h]; if(!ex) return null;
+    exitIdx=t+h;
+    raw=(ex.c/entry-1)*100;
+    if(dir==='down') raw=-raw;
+  }
+  const fc=fund?fundingCost(fund,bars[t].t,bars[exitIdx].t,dir):0;
+  return raw-cost-fc;
+}
+function findSignals(bars,P){
+  const sigs=[]; const rg=btRange(bars); const lastFire={};
+  const cv=computeCVD(bars);
+  for(let t=rg.start;t<=rg.end;t++){
+    const sub=bars.slice(0,t+1); const found=[];
+    const tri=detectTriangle(sub,P);
+    if(tri&&tri.brk.state==='confirmed'&&tri.dir) found.push({type:tri.type,dir:tri.dir});
+    detectStructural(sub,P).forEach(function(p){ if(p.brk&&p.brk.state==='confirmed') found.push({type:p.type,dir:p.dir}); });
+    detectHarmonics(sub,P).forEach(function(p){
+      if(p.status==='completed'&&p.lastIdx===t) found.push({type:'谐波·'+p.pattern.split(' ')[0],dir:p.bull?'up':'down'});
+    });
+    const ch=detectChan(sub);
+    if(ch.brkDir) found.push({type:'缠论中枢突破',dir:ch.brkDir});
+    detectElliott(sub).forEach(function(e){
+      if(e.endIdx===t) found.push({type:'艾略特5浪完成',dir:e.dir==='up'?'down':'up'});
+    });
+    // CVD slope over the 10 bars ending at t, using only data up to t (no look-ahead)
+    let net=0, vol=0;
+    for(let i=Math.max(1,t-9);i<=t;i++){ net+=cv.delta[i]; vol+=bars[i].v; }
+    const slope=vol>0?clamp(net/vol,-1,1):0;
+    found.forEach(function(f){
+      if(lastFire[f.type]!==undefined&&t-lastFire[f.type]<10) return;
+      lastFire[f.type]=t;
+      sigs.push({type:f.type,dir:f.dir,idx:t});
+      const agrees = f.dir==='up' ? slope>0.05 : slope<-0.05;
+      if(agrees){
+        const vt=f.type+' +CVD同向';
+        if(lastFire[vt]===undefined||t-lastFire[vt]>=10){ lastFire[vt]=t; sigs.push({type:vt,dir:f.dir,idx:t}); }
+      }
+    });
+  }
+  return sigs;
+}
+function scoreSignals(bars,sigs,cost,stop,fund){
+  const mid=btMid(bars);
+  return sigs.map(function(s){
+    const rets={};
+    HORIZONS.forEach(function(h){ const v=simulate(bars,s.idx,h,s.dir,cost,stop,fund); if(v!==null) rets['h'+h]=v; });
+    return {type:s.type,dir:s.dir,idx:s.idx,rets:rets,phase:s.idx<=mid?'IS':'OOS'};
+  });
+}
+function baselineSymbol(bars,cost,stop,fund){
+  const out={IS:{h5:[],h10:[],h20:[]},OOS:{h5:[],h10:[],h20:[]}};
+  const rg=btRange(bars), mid=btMid(bars);
+  for(let t=rg.start;t<=rg.end;t++){
+    const ph=t<=mid?'IS':'OOS';
+    HORIZONS.forEach(function(h){
+      const v=simulate(bars,t,h,'up',cost,stop,fund);
+      if(v!==null) out[ph]['h'+h].push(v);
+    });
+  }
+  return out;
+}
+function summarizeBaseline(all){
+  const res={};
+  HORIZONS.forEach(function(h){
+    const a=all['h'+h];
+    if(!a.length){ res['h'+h]={n:0}; return; }
+    const lw=a.filter(function(v){return v>0;}).length;
+    res['h'+h]={n:a.length, longWinK:lw, longWin:lw/a.length*100, shortWinK:a.length-lw, shortWin:(a.length-lw)/a.length*100,
+      mean:a.reduce(function(x,y){return x+y;},0)/a.length};
+  });
+  return res;
+}
+function aggregate(events){
+  const by={};
+  events.forEach(function(e){
+    if(!by[e.type]) by[e.type]={type:e.type,n:0,up:0,down:0,rets:{h5:[],h10:[],h20:[]}};
+    const b=by[e.type]; b.n++; if(e.dir==='up') b.up++; else b.down++;
+    HORIZONS.forEach(function(h){ const v=e.rets['h'+h]; if(v!==undefined) b.rets['h'+h].push(v); });
+  });
+  return Object.values(by).map(function(b){
+    const st={};
+    HORIZONS.forEach(function(h){
+      const a=b.rets['h'+h];
+      if(!a.length){ st['h'+h]={n:0}; return; }
+      const k=a.filter(function(v){return v>0;}).length;
+      const sorted=a.slice().sort(function(x,y){return x-y;});
+      st['h'+h]={n:a.length, k:k, winRate:k/a.length*100,
+        mean:a.reduce(function(x,y){return x+y;},0)/a.length,
+        median:sorted[Math.floor(sorted.length/2)], all:a};
+    });
+    return {type:b.type,n:b.n,up:b.up,down:b.down,stat:st};
+  }).sort(function(a,b){return b.n-a.n;});
+}
+function runBacktestFrom(P,cost,stop){
+  let events=[];
+  const base={h5:[],h10:[],h20:[]}, baseIS={h5:[],h10:[],h20:[]}, baseOOS={h5:[],h10:[],h20:[]};
+  Object.keys(state.results).forEach(function(sym){
+    const r=state.results[sym];
+    if(!r.bars||r.bars.length<=110) return;
+    const fund=state.fundingOn?r.funding:null;
+    const sigs=(r.sigCache&&r.sigCacheKey===P.name)?r.sigCache:findSignals(r.bars,P);
+    if(!r.sigCache||r.sigCacheKey!==P.name){ r.sigCache=sigs; r.sigCacheKey=P.name; }
+    events=events.concat(scoreSignals(r.bars,sigs,cost,stop,fund));
+    const bl=baselineSymbol(r.bars,cost,stop,fund);
+    HORIZONS.forEach(function(h){
+      Array.prototype.push.apply(baseIS['h'+h],bl.IS['h'+h]);
+      Array.prototype.push.apply(baseOOS['h'+h],bl.OOS['h'+h]);
+      Array.prototype.push.apply(base['h'+h],bl.IS['h'+h]);
+      Array.prototype.push.apply(base['h'+h],bl.OOS['h'+h]);
+    });
+  });
+  return {events:events, agg:aggregate(events),
+    aggIS:aggregate(events.filter(function(e){return e.phase==='IS';})),
+    aggOOS:aggregate(events.filter(function(e){return e.phase==='OOS';})),
+    baseline:summarizeBaseline(base), baselineIS:summarizeBaseline(baseIS), baselineOOS:summarizeBaseline(baseOOS)};
+}
+
+/* ==================== RENDER HELPERS ==================== */
+function scoreCell(s){
+  s=clamp(Math.round(s||0),0,100);
+  const c=s>=70?'#24e39b':(s>=40?'#ffb84d':'#ff5c7a');
+  return '<div class="scorewrap"><div class="scorebar"><i style="width:'+s+'%;background:'+c+'"></i></div><span class="scoreval">'+s+'</span></div>';
+}
+function binanceLink(s){ return 'https://www.binance.com/en/futures/'+s; }
+function sparklineSVG(cl,w,h){
+  w=w||88; h=h||26; if(!cl||cl.length<2) return '';
+  const mn=Math.min.apply(null,cl), mx=Math.max.apply(null,cl), rg=(mx-mn)||1, st=w/(cl.length-1);
+  const pts=cl.map(function(c,i){ return (i*st).toFixed(1)+','+(h-((c-mn)/rg)*h).toFixed(1); }).join(' ');
+  return '<svg width="'+w+'" height="'+h+'" class="spark"><polyline points="'+pts+'" fill="none" stroke="'+(cl[cl.length-1]>=cl[0]?'#24e39b':'#ff5c7a')+'" stroke-width="1.6"/></svg>';
+}
+function statusChip(t,x){ return '<span class="status '+(t==='up'?'up':t==='down'?'down':'wait')+'">'+x+'</span>'; }
+function starHtml(s){ return '<span class="star '+(state.watch.has(s)?'on':'')+'" onclick="toggleWatch(event,\''+s+'\')">★</span>'; }
+function symCell(s){ return '<td class="sym"><a href="'+binanceLink(s)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">'+s+'</a></td>'; }
+function chgCell(r){ return '<span class="chg '+(r.chg>=0?'pos':'neg')+'">'+(r.chg>=0?'+':'')+r.chg.toFixed(2)+'%</span>'; }
+function emptyState(m){ return '<div class="placeholder">'+m+'</div>'; }
+function loadingOrEmpty(l,m){
+  if(!state.scanned.length) return '<div class="loading-row">点击右上角「开始扫描」拉取真实 Binance 行情数据</div>';
+  if(!l.length) return emptyState(m);
+  return null;
+}
+function htfChip(r){
+  const b=r.htfBias; if(!b) return '<span class="pd">—</span>';
+  if(b.dir==='up') return '<span class="status up" title="'+b.why+'">'+HTF_LABEL[state.tf]+'↑</span>';
+  if(b.dir==='down') return '<span class="status down" title="'+b.why+'">'+HTF_LABEL[state.tf]+'↓</span>';
+  return '<span class="status wait" title="'+b.why+'">'+HTF_LABEL[state.tf]+'中性</span>';
+}
+function mtfNote(s,t){
+  if(!state.mtfOnly) return '';
+  return '<div class="infobox">已开启<b>多周期同向过滤</b>：只显示方向与'+HTF_LABEL[state.tf]+'一致的信号（'+s+' / '+t+'）。</div>';
+}
+function qFilter(sym){ return !state.query || sym.toLowerCase().indexOf(state.query)>=0; }
+function csvBtn(){ return '<span class="csv" onclick="exportCSV(event)">导出 CSV</span>'; }
+
+/* ==================== CHART ==================== */
+function buildChart(bars,ov){
+  const W=960,padL=8,padR=62,padT=12,priceH=300,volH=60,rsiH=64,gap=10;
+  const H=padT+priceH+gap+volH+gap+rsiH+12, innerW=W-padL-padR, n=bars.length;
+  let mn=Infinity,mx=-Infinity;
+  bars.forEach(function(b){ if(b.l<mn)mn=b.l; if(b.h>mx)mx=b.h; });
+  (ov.priceExtras||[]).forEach(function(p){ if(p<mn)mn=p; if(p>mx)mx=p; });
+  const pad=(mx-mn)*0.08||1; mn-=pad; mx+=pad;
+  const cs=bars.map(function(b){return b.c;}), ma20=smaArr(cs,20), ma60=smaArr(cs,60), rs=rsi(cs,14);
+  const maxV=Math.max.apply(null,bars.map(function(b){return b.v;}))||1;
+  function X(i){ return padL+(i/Math.max(1,n-1))*innerW; }
+  function Y(p){ return padT+(1-(p-mn)/(mx-mn))*priceH; }
+  const volTop=padT+priceH+gap; function YV(v){ return volTop+(1-v/maxV)*volH; }
+  const rsiTop=volTop+volH+gap; function YR(v){ return rsiTop+(1-v/100)*rsiH; }
+  const cw=Math.max(1,innerW/n*0.62);
+  let s='<svg viewBox="0 0 '+W+' '+H+'" width="100%" style="display:block;">';
+  for(let g=0;g<=4;g++){
+    const p=mn+(mx-mn)*g/4, y=Y(p);
+    s+='<line x1="'+padL+'" x2="'+(W-padR)+'" y1="'+y.toFixed(1)+'" y2="'+y.toFixed(1)+'" stroke="rgba(255,255,255,.06)"/>';
+    s+='<text x="'+(W-padR+6)+'" y="'+(y+3).toFixed(1)+'" fill="#565f74" font-size="10" font-family="IBM Plex Mono">'+p.toPrecision(6)+'</text>';
+  }
+  bars.forEach(function(b,i){
+    const x=X(i), c=b.c>=b.o?'#24e39b':'#ff5c7a';
+    s+='<line x1="'+x.toFixed(1)+'" x2="'+x.toFixed(1)+'" y1="'+Y(b.h).toFixed(1)+'" y2="'+Y(b.l).toFixed(1)+'" stroke="'+c+'"/>';
+    const a=Y(b.o),z=Y(b.c);
+    s+='<rect x="'+(x-cw/2).toFixed(1)+'" y="'+Math.min(a,z).toFixed(1)+'" width="'+cw.toFixed(1)+'" height="'+Math.max(1,Math.abs(z-a)).toFixed(1)+'" fill="'+c+'"/>';
+  });
+  function mp(a,c){ const p=[]; a.forEach(function(v,i){ if(v!==null) p.push(X(i).toFixed(1)+','+Y(v).toFixed(1)); }); return p.length>1?'<polyline points="'+p.join(' ')+'" fill="none" stroke="'+c+'" stroke-width="1.2" opacity=".85"/>':''; }
+  s+=mp(ma20,'#ffb84d')+mp(ma60,'#4d8fe0');
+  s+='<text x="'+padL+'" y="'+(padT+11)+'" fill="#ffb84d" font-size="10" font-family="IBM Plex Mono">MA20</text>';
+  s+='<text x="'+(padL+38)+'" y="'+(padT+11)+'" fill="#4d8fe0" font-size="10" font-family="IBM Plex Mono">MA60</text>';
+  (ov.boxes||[]).forEach(function(b){
+    const x1=X(clamp(b.x1,0,n-1)),x2=X(clamp(b.x2,0,n-1));
+    s+='<rect x="'+x1.toFixed(1)+'" y="'+Y(b.y2).toFixed(1)+'" width="'+Math.max(1,x2-x1).toFixed(1)+'" height="'+Math.abs(Y(b.y1)-Y(b.y2)).toFixed(1)+'" fill="'+b.color+'" fill-opacity="0.14" stroke="'+b.color+'"/>';
+  });
+  (ov.lines||[]).forEach(function(l){
+    s+='<line x1="'+X(clamp(l.x1,0,n-1)).toFixed(1)+'" y1="'+Y(l.y1).toFixed(1)+'" x2="'+X(clamp(l.x2,0,n-1)).toFixed(1)+'" y2="'+Y(l.y2).toFixed(1)+'" stroke="'+l.color+'" stroke-width="1.6" stroke-dasharray="'+(l.dash||'0')+'"/>';
+  });
+  (ov.polylines||[]).forEach(function(p){
+    s+='<polyline points="'+p.points.map(function(q){return X(clamp(q.x,0,n-1)).toFixed(1)+','+Y(q.y).toFixed(1);}).join(' ')+'" fill="none" stroke="'+p.color+'" stroke-width="1.8"/>';
+    p.points.forEach(function(q,i){
+      const px=X(clamp(q.x,0,n-1)),py=Y(q.y);
+      s+='<circle cx="'+px.toFixed(1)+'" cy="'+py.toFixed(1)+'" r="2.8" fill="'+p.color+'"/>';
+      if(p.labels) s+='<text x="'+(px+4).toFixed(1)+'" y="'+(py-5).toFixed(1)+'" fill="'+p.color+'" font-size="10" font-family="IBM Plex Mono">'+p.labels[i]+'</text>';
+    });
+  });
+  s+='<text x="'+padL+'" y="'+(volTop+10)+'" fill="#565f74" font-size="10" font-family="IBM Plex Mono">VOL</text>';
+  bars.forEach(function(b,i){
+    const x=X(i);
+    s+='<rect x="'+(x-cw/2).toFixed(1)+'" y="'+YV(b.v).toFixed(1)+'" width="'+cw.toFixed(1)+'" height="'+Math.max(0.5,volTop+volH-YV(b.v)).toFixed(1)+'" fill="'+(b.c>=b.o?'rgba(36,227,155,.55)':'rgba(255,92,122,.55)')+'"/>';
+  });
+  [30,70].forEach(function(lv){
+    s+='<line x1="'+padL+'" x2="'+(W-padR)+'" y1="'+YR(lv).toFixed(1)+'" y2="'+YR(lv).toFixed(1)+'" stroke="rgba(255,255,255,.10)" stroke-dasharray="3,3"/>';
+    s+='<text x="'+(W-padR+6)+'" y="'+(YR(lv)+3).toFixed(1)+'" fill="#565f74" font-size="9" font-family="IBM Plex Mono">'+lv+'</text>';
+  });
+  const rp=[]; rs.forEach(function(v,i){ if(v!==null) rp.push(X(i).toFixed(1)+','+YR(v).toFixed(1)); });
+  if(rp.length>1) s+='<polyline points="'+rp.join(' ')+'" fill="none" stroke="#b18cff" stroke-width="1.3"/>';
+  s+='<text x="'+padL+'" y="'+(rsiTop+10)+'" fill="#b18cff" font-size="10" font-family="IBM Plex Mono">RSI(14)</text></svg>';
+  return s;
+}
+function brkText(b){ return !b?'—':(b.state==='confirmed'?'已确认突破':(b.state==='tentative'?'暂破待确认':'未突破')); }
+function shiftObj(o,s){
+  if(!o) return o; const c=Object.assign({},o);
+  if(c.xRange) c.xRange=[c.xRange[0]-s,c.xRange[1]-s];
+  if(c.span) c.span=[c.span[0]-s,c.span[1]-s];
+  if(c.upper) c.upper={slope:c.upper.slope,intercept:c.upper.intercept+c.upper.slope*s};
+  if(c.lower) c.lower={slope:c.lower.slope,intercept:c.lower.intercept+c.lower.slope*s};
+  if(o.neckFn) c.neckFn=function(i){ return o.neckFn(i+s); };
+  return c;
+}
+function shiftPts(o,s){ const c=Object.assign({},o); if(c.points) c.points=c.points.map(function(p){return {idx:p.idx-s,price:p.price,type:p.type};}); return c; }
+function buildOverlays(r){
+  const ov={lines:[],polylines:[],boxes:[],priceExtras:[]}, lg=[], n=r.bars.length;
+  if(r.triangle){
+    const t=r.triangle,x1=t.xRange[0],x2=t.xRange[1];
+    ov.lines.push({x1:x1,y1:t.upper.slope*x1+t.upper.intercept,x2:x2,y2:t.upper.slope*x2+t.upper.intercept,color:'#35e6ff'});
+    ov.lines.push({x1:x1,y1:t.lower.slope*x1+t.lower.intercept,x2:x2,y2:t.lower.slope*x2+t.lower.intercept,color:'#35e6ff'});
+    lg.push({label:'三角: '+t.type+'（'+brkText(t.brk)+'）',color:'#35e6ff'});
+  }
+  (r.structural||[]).forEach(function(p,i){
+    const c=i===0?'#ff6bd6':'#b18cff';
+    if(p.neckFn){ const x1=p.span[0],x2=n-1; ov.lines.push({x1:x1,y1:p.neckFn(x1),x2:x2,y2:p.neckFn(x2),color:c,dash:'4,3'}); ov.priceExtras.push(p.neckFn(x2)); }
+    if(p.upper&&p.lower){
+      const a=p.xRange[0],b=p.xRange[1];
+      ov.lines.push({x1:a,y1:p.upper.slope*a+p.upper.intercept,x2:b,y2:p.upper.slope*b+p.upper.intercept,color:c});
+      ov.lines.push({x1:a,y1:p.lower.slope*a+p.lower.intercept,x2:b,y2:p.lower.slope*b+p.lower.intercept,color:c});
+    }
+    lg.push({label:'形态: '+p.type+'（'+brkText(p.brk)+'）',color:c});
+  });
+  if(r.harmonics&&r.harmonics.length){
+    const h=r.harmonics[0];
+    ov.polylines.push({points:h.points.map(function(p){return {x:p.idx,y:p.price};}),color:'#ffb84d',labels:['X','A','B','C','D']});
+    lg.push({label:'谐波: '+h.pattern+(h.status==='forming'?'（形成中）':'（已完成）'),color:'#ffb84d'});
+  }
+  if(r.chan&&r.chan.zs&&r.chan.zs.length){
+    const z=r.chan.zs[r.chan.zs.length-1];
+    ov.boxes.push({x1:z.startIdx,x2:z.endIdx,y1:z.ZD,y2:z.ZG,color:'#24e39b'});
+    ov.priceExtras.push(z.ZG,z.ZD);
+    lg.push({label:'缠论中枢 '+z.ZD.toPrecision(6)+' ~ '+z.ZG.toPrecision(6),color:'#24e39b'});
+  }
+  if(r.elliott&&r.elliott.length){
+    const e=r.elliott[0];
+    ov.polylines.push({points:e.points.map(function(p){return {x:p.idx,y:p.price};}),color:'#ff5c7a',labels:['0','1','2','3','4','5']});
+    lg.push({label:'艾略特候选（'+(e.dir==='up'?'上升5浪':'下降5浪')+'）',color:'#ff5c7a'});
+  }
+  return {ov:ov,lg:lg};
+}
+function openDetail(sym){
+  const r=state.results[sym]; if(!r||!r.bars) return;
+  document.getElementById('detailOverlay').style.display='flex';
+  const view=r.bars.slice(-160), sh=r.bars.length-view.length;
+  const sv={bars:view, triangle:shiftObj(r.triangle,sh),
+    structural:(r.structural||[]).map(function(p){return shiftObj(p,sh);}),
+    harmonics:(r.harmonics||[]).map(function(p){return shiftPts(p,sh);}),
+    elliott:(r.elliott||[]).map(function(p){return shiftPts(p,sh);}),
+    chan:r.chan?{zs:r.chan.zs.map(function(z){return {ZG:z.ZG,ZD:z.ZD,startIdx:z.startIdx-sh,endIdx:z.endIdx-sh};})}:null};
+  const b=buildOverlays(sv);
+  document.getElementById('detailBox').innerHTML=
+    '<div class="modal-head"><h3>'+sym+' · '+state.tf+' · '+r.price+' <span class="chg '+(r.chg>=0?'pos':'neg')+'" style="margin-left:8px;">'+(r.chg>=0?'+':'')+r.chg.toFixed(2)+'%</span></h3>'+
+    '<div class="modal-close" onclick="closeDetail()">✕</div></div>'+
+    '<div class="chart-svg-wrap">'+buildChart(view,b.ov)+'</div>'+
+    '<div class="legend">'+(b.lg.length?b.lg.map(function(l){return '<span><i style="background:'+l.color+'"></i>'+l.label+'</span>';}).join(''):'<span style="color:var(--text-faint)">当前未检测到结构性信号，仅展示K线</span>')+'</div>'+
+    '<div class="foot-note">最近 '+view.length+' 根真实 '+state.tf+' K线，含 MA20/MA60、成交量与 RSI(14)。 <a href="'+binanceLink(sym)+'" target="_blank" rel="noopener" style="color:var(--cyan)">在 Binance 打开 →</a></div>';
+}
+function closeDetail(){ document.getElementById('detailOverlay').style.display='none'; }
+document.addEventListener('keydown',function(e){ if(e.key==='Escape') closeDetail(); });
+
+/* ==================== FETCH (with cache) ==================== */
+async function loadExchangeInfo(){
+  const info=await fetchJSON(FAPI+'/fapi/v1/exchangeInfo');
+  const syms=[], ob={};
+  info.symbols.forEach(function(s){
+    if(s.contractType==='PERPETUAL'&&s.quoteAsset==='USDT'&&s.status==='TRADING'){ syms.push(s.symbol); ob[s.symbol]=s.onboardDate||0; }
+  });
+  return {symbols:syms, onboard:ob};
+}
+async function loadTickers(){ const a=await fetchJSON(FAPI+'/fapi/v1/ticker/24hr'); const m={}; a.forEach(function(t){ m[t.symbol]=t; }); return m; }
+async function loadFundingAvg(syms){
+  try{
+    const a=await fetchJSON(FAPI+'/fapi/v1/premiumIndex'), s=new Set(syms);
+    const r=a.filter(function(x){return s.has(x.symbol);}).map(function(x){return parseFloat(x.lastFundingRate);}).filter(function(n){return !isNaN(n);});
+    return r.length?r.reduce(function(x,y){return x+y;},0)/r.length:null;
+  }catch(e){ return null; }
+}
+async function loadKlines(sym,iv,lim){
+  const key=sym+'|'+iv+'|'+lim, ttl=(TF_MS[iv]||36e5)/2, now=Date.now();
+  const hit=klineCache.get(key);
+  if(hit&&now-hit.t<ttl) return hit.d;
+  const a=await fetchJSON(FAPI+'/fapi/v1/klines?symbol='+sym+'&interval='+iv+'&limit='+lim);
+  const d=a.map(function(k){ return {t:k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5],tb:+k[9]}; });
+  klineCache.set(key,{t:now,d:d});
+  if(klineCache.size>1200) klineCache.delete(klineCache.keys().next().value);
+  return d;
+}
+async function loadFundingHistory(sym){
+  const key='FUND|'+sym, now=Date.now(), hit=klineCache.get(key);
+  if(hit&&now-hit.t<216e5) return hit.d;
+  try{
+    const a=await fetchJSON(FAPI+'/fapi/v1/fundingRate?symbol='+sym+'&limit=1000');
+    const d=a.map(function(x){ return {t:x.fundingTime, r:parseFloat(x.fundingRate)}; })
+             .filter(function(x){ return !isNaN(x.r); })
+             .sort(function(x,y){ return x.t-y.t; });
+    klineCache.set(key,{t:now,d:d});
+    return d;
+  }catch(e){ return []; }
+}
+async function loadGlobals(){
+  const o={};
+  try{ const f=await fetchJSON('https://api.alternative.me/fng/?limit=2'); o.fng=parseInt(f.data[0].value); o.fngLabel=f.data[0].value_classification; }catch(e){}
+  try{ const g=await fetchJSON('https://api.coingecko.com/api/v3/global'); o.btcDom=g.data.market_cap_percentage.btc; }catch(e){}
+  try{ const s=await fetchJSON('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&category=stablecoins&per_page=100&page=1'); o.stableMcap=s.reduce(function(a,c){return a+(c.market_cap||0);},0); }catch(e){}
+  return o;
+}
+function pickSymbols(universe,tickers,N,mode){
+  const avail=universe.filter(function(s){return tickers[s];});
+  if(mode==='listing'){
+    const sorted=avail.slice().sort(function(a,b){ return (state.onboard[a]||0)-(state.onboard[b]||0); });
+    const out=[], step=sorted.length/N;
+    for(let i=0;i<N&&i<sorted.length;i++){
+      const lo=Math.floor(i*step), hi=Math.min(sorted.length,Math.floor((i+1)*step));
+      const bucket=sorted.slice(lo,Math.max(hi,lo+1));
+      // within each listing-date bucket take the most liquid, so K-line data is usable
+      bucket.sort(function(a,b){ return parseFloat(tickers[b].quoteVolume)-parseFloat(tickers[a].quoteVolume); });
+      if(bucket[0]&&out.indexOf(bucket[0])<0) out.push(bucket[0]);
+    }
+    return out;
+  }
+  return avail.sort(function(a,b){ return parseFloat(tickers[b].quoteVolume)-parseFloat(tickers[a].quoteVolume); }).slice(0,N);
+}
+
+/* ==================== SCAN ==================== */
+async function runScan(){
+  if(state.scanning) return; state.scanning=true;
+  const btn=document.getElementById('scanBtn'); btn.disabled=true; btn.textContent='扫描中…';
+  document.getElementById('errHost').innerHTML=''; setProg('正在获取合约列表…',2);
+  const oldResults=state.results; state.results={}; state.backtest=null; state.sens=null;
+  try{
+    const ei=await loadExchangeInfo();
+    state.universe=ei.symbols; state.onboard=ei.onboard;
+    document.getElementById('universeCount').textContent=ei.symbols.length;
+    setProg('正在获取 24 小时行情…',5);
+    const tickers=await loadTickers(); state.tickers=tickers;
+    const N=parseInt(document.getElementById('scanN').value,10);
+    const mode=document.getElementById('sampleMode').value;
+    const ranked=pickSymbols(ei.symbols,tickers,N,mode);
+    state.scanned=ranked; document.getElementById('scanCount').textContent=ranked.length;
+    setProg('正在获取全局市场数据…',8);
+    const g=await Promise.all([loadFundingAvg(ranked),loadGlobals()]);
+    state.globals=g[1]; renderGlobalStats(g[1],g[0],ranked,tickers);
+
+    const tf=state.tf, lim=TF_LIMIT[tf], htf=HTF_MAP[tf];
+    let done=0; setProg('正在拉取 K 线并计算指标 0 / '+ranked.length,10);
+    await pMap(ranked, async function(sym){
+      try{
+        const kl=await Promise.all([loadKlines(sym,tf,lim),loadKlines(sym,'1d',150),loadKlines(sym,'1w',60),loadKlines(sym,htf,200),loadFundingHistory(sym),loadOI(sym,OI_PERIOD[tf]||'1d')]);
+        const bars=kl[0],daily=kl[1],weekly=kl[2],hb=kl[3],fund=kl[4],oi=kl[5];
+        const cD=daily.map(function(k){return k.c;}),hD=daily.map(function(k){return k.h;}),lD=daily.map(function(k){return k.l;});
+        const cW=weekly.map(function(k){return k.c;}),hW=weekly.map(function(k){return k.h;}),lW=weekly.map(function(k){return k.l;});
+        const sD=computeSKDJ(hD,lD,cD),sW=computeSKDJ(hW,lW,cW);
+        const kD=sD.K[sD.K.length-1],kW=sW.K[sW.K.length-1];
+        const tD=computeTD(cD),tDL=tD[tD.length-1],tW=computeTD(cW),tWL=tW[tW.length-1];
+        const e120=ema(cD,120),rD=rsi(cD,14);
+        const lc=cD[cD.length-1],le=e120[e120.length-1],lr=rD[rD.length-1];
+        const sb=kD<=15&&kW<=15, st=kD>=80&&kW>=80;
+        const cv=computeCVD(bars);
+        const cslope=cvdSlope(bars,cv.cvd,10);
+        const oiC=oiChange(oi,10);
+        const barChg=bars.length>10?(bars[bars.length-1].c/bars[bars.length-11].c-1)*100:null;
+        const rec={
+          sym:sym, price:bars[bars.length-1].c, chg:parseFloat(tickers[sym].priceChangePercent), qvol:parseFloat(tickers[sym].quoteVolume),
+          bars:bars, funding:fund, closesSpark:bars.map(function(b){return b.c;}).slice(-30),
+          cvd:cv.cvd, cvdSlope:cslope, cvdDiv:cvdDivergence(bars,cv.cvd), oi:oi, oiChg10:oiC,
+          oiRead:oiReading(barChg,oiC), barChg10:barChg,
+          triangle:detectTriangle(bars), structural:detectStructural(bars), harmonics:detectHarmonics(bars),
+          chan:detectChan(bars), elliott:detectElliott(bars), htfBias:computeHtfBias(hb),
+          kD:kD,kW:kW,skdjBottom:sb,skdjTop:st,tdD:tDL,tdW:tWL,
+          jiuzhuanFlag:(tDL.count>=7&&tWL.count>=7&&tDL.dir===tWL.dir)?tDL.dir:null,
+          ema120:le, rsi14:lr, santongFlag: lc<le&&lr!==null&&lr<30&&sb,
+        };
+        rec.early=earlyWarning(rec);
+        state.results[sym]=rec;
+      }catch(e){}
+      done++;
+      if(done%3===0||done===ranked.length) setProg('正在拉取 K 线并计算指标 '+done+' / '+ranked.length,10+(done/ranked.length)*55);
+    },8);
+
+    updateCounts(); renderSection(); stampTime();
+    checkAlerts(oldResults);
+
+    setProg('回看验证计算中（含成本与止损）…',68);
+    await yieldUI();
+    PARAMS={zz:0.04,volMult:1.2,name:'基准'};
+    const bt=runBacktestFrom(PARAMS,state.cost,state.stop);
+    state.backtest={events:bt.events,agg:bt.agg,aggIS:bt.aggIS,aggOOS:bt.aggOOS,baseline:bt.baseline,
+      baselineIS:bt.baselineIS,baselineOOS:bt.baselineOOS,symbols:Object.keys(state.results).length,tf:tf,bars:lim};
+    document.getElementById('cnt_verify').textContent=bt.events.length;
+    setProg('回看验证完成',state.sensOn?80:100,!state.sensOn);
+    renderSection();
+
+    if(state.sensOn){
+      const sens=[];
+      for(let i=0;i<PARAM_SETS.length;i++){
+        const P=PARAM_SETS[i];
+        setProg('参数敏感性检验 '+(i+1)+' / '+PARAM_SETS.length+'（'+P.name+'）',80+(i/PARAM_SETS.length)*20);
+        await yieldUI();
+        Object.keys(state.results).forEach(function(s){ state.results[s].sigCache=null; state.results[s].sigCacheKey=null; });
+        const r=runBacktestFrom(P,state.cost,state.stop);
+        sens.push({name:P.name,zz:P.zz,volMult:P.volMult,agg:r.agg,baseline:r.baseline,n:r.events.length});
+      }
+      state.sens=sens;
+      Object.keys(state.results).forEach(function(s){ state.results[s].sigCache=null; state.results[s].sigCacheKey=null; });
+      setProg('扫描完成（含参数敏感性）',100,true);
+    }
+    renderSection(); stampTime();
+  }catch(e){
+    document.getElementById('errHost').innerHTML='<div class="errbox">扫描出错：'+e.message+'。可能是网络环境限制了对 Binance / CoinGecko 接口的访问，可稍后重试。</div>';
+    setProg('扫描失败',0,false,true);
+  }finally{ state.scanning=false; btn.disabled=false; btn.textContent='↻ 重新扫描'; }
+}
+function setProg(t,p,d,e){
+  const el=document.getElementById('progStatus');
+  el.textContent=d?'已有结果':(e?'扫描失败':'扫描中');
+  el.className='tag'+(d?' done':'')+(e?' err':'');
+  document.getElementById('progDetail').textContent=t;
+  document.getElementById('barInner').style.width=clamp(p,0,100)+'%';
+}
+function stampTime(){
+  const n=new Date(); function p(x){return String(x).padStart(2,'0');}
+  document.getElementById('tsNow').textContent='最新结果 '+p(n.getMonth()+1)+'/'+p(n.getDate())+' '+p(n.getHours())+':'+p(n.getMinutes())+':'+p(n.getSeconds());
+}
+function renderGlobalStats(g,f,ranked,tk){
+  const el=document.getElementById('s_fng');
+  if(g.fng!==undefined){ const c=g.fng>=55?'greed':(g.fng<=45?'fear':'neutral'); el.innerHTML=g.fng+' / 100 <span class="pill '+c+'">'+(g.fngLabel||'')+'</span>'; }
+  else el.textContent='接口不可用';
+  document.getElementById('s_dom').textContent=g.btcDom!==undefined?g.btcDom.toFixed(2)+'%':'接口不可用';
+  document.getElementById('s_stable').textContent=g.stableMcap!==undefined?fmtUSD(g.stableMcap):'接口不可用';
+  const fe=document.getElementById('s_funding');
+  if(f!==null&&f!==undefined) fe.innerHTML='<span class="'+(f>=0?'chg pos':'chg neg')+'">'+(f*100).toFixed(4)+'%</span>'; else fe.textContent='—';
+  document.getElementById('s_vol').textContent=fmtUSD(ranked.reduce(function(a,s){return a+(parseFloat(tk[s]&&tk[s].quoteVolume)||0);},0));
+}
+function updateCounts(){
+  const l=Object.values(state.results), c=function(f){ return l.filter(f).length; };
+  document.getElementById('cnt_sanjiao').textContent=c(function(r){return r.triangle;});
+  document.getElementById('cnt_xingtai').textContent=c(function(r){return r.structural&&r.structural.length;});
+  document.getElementById('cnt_xiebo').textContent=c(function(r){return r.harmonics&&r.harmonics.length;});
+  document.getElementById('cnt_chanlun').textContent=c(function(r){return r.chan&&r.chan.zs&&r.chan.zs.length;});
+  document.getElementById('cnt_ailiate').textContent=c(function(r){return r.elliott&&r.elliott.length;});
+  document.getElementById('cnt_skdj').textContent=c(function(r){return r.skdjBottom||r.skdjTop;});
+  document.getElementById('cnt_jiuzhuan').textContent=c(function(r){return r.jiuzhuanFlag;});
+  document.getElementById('cnt_santong').textContent=c(function(r){return r.santongFlag;});
+  let ew=0; l.forEach(function(r){ ew+=(r.early||[]).length; });
+  document.getElementById('cnt_flow').textContent=ew;
+  try{ document.getElementById('cnt_overview').textContent=collectSignals().length; }catch(e){}
+  const cc={};
+  l.forEach(function(r){ let n=0; if(r.skdjBottom||r.skdjTop)n++; if(r.jiuzhuanFlag)n++; if(r.santongFlag)n++; if(r.triangle)n++; if(r.structural&&r.structural.length)n++; if(r.harmonics&&r.harmonics.length)n++; cc[r.sym]=n; });
+  document.getElementById('cnt_combo').textContent=l.filter(function(r){return cc[r.sym]>=2;}).length;
+  document.getElementById('cnt_fav').textContent=state.watch.size;
+}
+function comboScore(r){
+  let s=0;
+  if(r.triangle) s+=r.triangle.score;
+  if(r.structural&&r.structural.length) s+=r.structural[0].score;
+  if(r.harmonics&&r.harmonics.length) s+=r.harmonics[0].score;
+  if(r.chan) s+=r.chan.score;
+  if(r.elliott&&r.elliott.length) s+=r.elliott[0].score;
+  if(r.skdjBottom||r.skdjTop) s+=50;
+  if(r.jiuzhuanFlag) s+=50;
+  if(r.santongFlag) s+=50;
+  return s;
+}
+
+/* ==================== ALERTS ==================== */
+function signalSet(results){
+  const s={};
+  Object.values(results).forEach(function(r){
+    if(r.triangle&&r.triangle.brk.state==='confirmed') s[r.sym+'|'+r.triangle.type+'|'+r.triangle.dir]=1;
+    (r.structural||[]).forEach(function(p){ if(p.brk&&p.brk.state==='confirmed') s[r.sym+'|'+p.type+'|'+p.dir]=1; });
+  });
+  return s;
+}
+function checkAlerts(oldResults){
+  const cur=signalSet(state.results);
+  if(!oldResults||!Object.keys(oldResults).length){ state.prevSignals=cur; return; }
+  const prev=state.prevSignals||signalSet(oldResults);
+  const fresh=Object.keys(cur).filter(function(k){ return !prev[k]; });
+  state.prevSignals=cur;
+  if(!fresh.length) return;
+  const parsed=fresh.map(function(k){ const p=k.split('|'); return {sym:p[0],type:p[1],dir:p[2]}; });
+  if(state.alertsOn){
+    state.alerts=parsed.slice(0,12);
+    renderAlerts();
+    if(typeof Notification!=='undefined'&&Notification.permission==='granted'){
+      try{ new Notification('Trading Scan · '+fresh.length+' 个新确认信号',{body:state.alerts.slice(0,4).map(function(a){return a.sym+' '+a.type;}).join('、')}); }catch(e){}
+    }
+  }
+  if(tg.on&&tg.token&&tg.chat) sendTG(buildTGMessage(parsed));
+}
+function renderAlerts(){
+  const h=document.getElementById('alertHost');
+  if(!state.alerts.length){ h.innerHTML=''; return; }
+  h.innerHTML='<div class="alertbar"><b>新确认信号 '+state.alerts.length+' 个：</b>'+
+    state.alerts.map(function(a){ return '<span onclick="openDetail(\''+a.sym+'\')" style="cursor:pointer;text-decoration:underline;">'+a.sym+' '+a.type+(a.dir==='up'?'↑':'↓')+'</span>'; }).join(' · ')+
+    '<span class="x" onclick="state.alerts=[];renderAlerts();">✕</span></div>';
+}
+function toggleAlerts(){
+  state.alertsOn=!state.alertsOn;
+  const el=document.getElementById('alertToggle');
+  el.textContent='新信号提醒：'+(state.alertsOn?'开':'关'); el.classList.toggle('on',state.alertsOn);
+  if(state.alertsOn){
+    state.prevSignals=signalSet(state.results);
+    if(typeof Notification!=='undefined'&&Notification.permission==='default'){ try{ Notification.requestPermission(); }catch(e){} }
+  } else { state.alerts=[]; renderAlerts(); }
+}
+
+/* ==================== TELEGRAM PUSH ==================== */
+const tg={token:'', chat:'', on:false};
+async function loadTG(){
+  try{
+    const r=await window.storage.get('tgconf',false);
+    if(r&&r.value){ const c=JSON.parse(r.value); tg.token=c.token||''; tg.chat=c.chat||''; tg.on=!!c.on; }
+  }catch(e){}
+  updateTGLabel();
+}
+async function saveTG(){ try{ await window.storage.set('tgconf',JSON.stringify({token:tg.token,chat:tg.chat,on:tg.on}),false); }catch(e){} }
+function updateTGLabel(){
+  const el=document.getElementById('tgToggle'); if(!el) return;
+  const ok=tg.token&&tg.chat;
+  el.textContent='Telegram 推送：'+(ok?(tg.on?'开':'关'):'未配置');
+  el.classList.toggle('on', ok&&tg.on);
+}
+function openTG(){
+  document.getElementById('detailOverlay').style.display='flex';
+  document.getElementById('detailBox').innerHTML=
+    '<div class="modal-head"><h3>Telegram 推送设置</h3><div class="modal-close" onclick="closeDetail()">✕</div></div>'+
+    '<div class="warnbox" style="margin-top:12px;"><b>安全提示</b>：Bot Token 相当于该机器人的密码，会保存在本工具的本地存储中。请<b>专门为此新建一个机器人</b>，不要复用有其他用途的 Token；不要在公用电脑上保存。本工具只会用它调用 sendMessage 发消息，不会做别的事，但你随时可以在 @BotFather 里 /revoke 撤销。</div>'+
+    '<div class="infobox"><b>怎么拿到这两个值</b><br>'+
+    '① 在 Telegram 里找 <b>@BotFather</b> → 发送 <b>/newbot</b> → 按提示起名 → 它会给你一串 Token（形如 <span style="font-family:var(--mono)">123456:AAE…</span>）<br>'+
+    '② 给你刚建的机器人<b>先发一句话</b>（否则它不能主动联系你）<br>'+
+    '③ 拿 Chat ID：浏览器打开 <span style="font-family:var(--mono)">https://api.telegram.org/bot&lt;你的Token&gt;/getUpdates</span>，找到 <span style="font-family:var(--mono)">"chat":{"id":数字}</span>，那个数字就是。群组的 ID 通常是负数。</div>'+
+    '<div style="display:flex;flex-direction:column;gap:10px;margin:14px 0;">'+
+    '<div><div class="lbl" style="margin-bottom:5px;">Bot Token</div><input class="inp" id="tgToken" style="width:100%" placeholder="123456789:AAE..." value="'+(tg.token||'')+'"></div>'+
+    '<div><div class="lbl" style="margin-bottom:5px;">Chat ID</div><input class="inp" id="tgChat" style="width:100%" placeholder="123456789 或 -100..." value="'+(tg.chat||'')+'"></div>'+
+    '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">'+
+    '<div class="toggle '+(tg.on?'on':'')+'" id="tgEnable" onclick="tgToggleEnable()">推送开关：'+(tg.on?'开':'关')+'</div>'+
+    '<button class="btn" onclick="tgSaveAndTest()">保存并发送测试消息</button>'+
+    '<button class="btn" onclick="tgClear()">清除配置</button>'+
+    '</div><div id="tgResult" style="font-size:12px;"></div></div>'+
+    '<div class="infobox">推送内容：每轮扫描后若出现<b>新的"已确认突破"</b>信号即推送（与页面顶部横幅同源，暂破待确认不推）。消息按标的分组，含形态、方向、强度分、CVD、高周期方向与价格，并附 Binance 链接。<b>建议配合"自动刷新"一起开</b>，否则只有你手动扫描时才会检查。</div>';
+}
+function tgToggleEnable(){
+  tg.on=!tg.on;
+  const el=document.getElementById('tgEnable');
+  el.textContent='推送开关：'+(tg.on?'开':'关'); el.classList.toggle('on',tg.on);
+}
+async function tgSaveAndTest(){
+  tg.token=(document.getElementById('tgToken').value||'').trim();
+  tg.chat=(document.getElementById('tgChat').value||'').trim();
+  const res=document.getElementById('tgResult');
+  if(!tg.token||!tg.chat){ res.innerHTML='<span style="color:var(--down)">Token 和 Chat ID 都要填。</span>'; return; }
+  await saveTG(); updateTGLabel();
+  res.innerHTML='<span style="color:var(--text-faint)">发送中…</span>';
+  const ok=await sendTG('✅ Trading Scan 连接成功\n\n以后有新的已确认突破信号，就会推到这里。\n当前周期：'+state.tf+' · 扫描池：'+state.scanned.length+' 个标的');
+  res.innerHTML= ok.ok ? '<span style="color:var(--up)">发送成功，去 Telegram 看看。</span>'
+    : '<span style="color:var(--down)">发送失败：'+ok.err+'</span>';
+}
+async function tgClear(){
+  tg.token=''; tg.chat=''; tg.on=false; await saveTG(); updateTGLabel();
+  document.getElementById('tgResult').innerHTML='<span style="color:var(--text-faint)">已清除。</span>';
+  document.getElementById('tgToken').value=''; document.getElementById('tgChat').value='';
+}
+async function sendTG(text){
+  if(!tg.token||!tg.chat) return {ok:false,err:'未配置'};
+  try{
+    const r=await fetch('https://api.telegram.org/bot'+tg.token+'/sendMessage',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({chat_id:tg.chat, text:text, disable_web_page_preview:true})
+    });
+    const j=await r.json();
+    if(j.ok) return {ok:true};
+    return {ok:false, err:(j.description||'未知错误')};
+  }catch(e){ return {ok:false, err:e.message+'（可能是网络限制或 Token 有误）'}; }
+}
+function dirArrow(d){ return d==='up'?'▲ 上破':'▼ 下破'; }
+function buildTGMessage(list){
+  const bySym={};
+  list.forEach(function(a){ (bySym[a.sym]=bySym[a.sym]||[]).push(a); });
+  const syms=Object.keys(bySym);
+  let s='🔔 Trading Scan · '+list.length+' 个新确认信号\n';
+  s+='周期 '+state.tf+' · '+new Date().toLocaleTimeString('zh-CN')+'\n';
+  s+='━━━━━━━━━━━━━━\n';
+  syms.slice(0,10).forEach(function(sym){
+    const r=state.results[sym];
+    const items=bySym[sym];
+    const up=items.filter(function(i){return i.dir==='up';}).length;
+    s+='\n'+(up>=items.length-up?'📈':'📉')+' '+sym+'\n';
+    items.forEach(function(i){
+      const p=findPatternObj(r,i.type);
+      s+='   • '+i.type+' '+dirArrow(i.dir);
+      if(p&&p.score!==undefined) s+='  强度'+Math.round(p.score);
+      s+='\n';
+    });
+    if(r){
+      const cs=r.cvdSlope!==undefined?((r.cvdSlope>=0?'+':'')+(r.cvdSlope*100).toFixed(0)+'%'):'—';
+      const hb=r.htfBias?(r.htfBias.dir==='up'?HTF_LABEL[state.tf]+'↑':(r.htfBias.dir==='down'?HTF_LABEL[state.tf]+'↓':HTF_LABEL[state.tf]+'中性')):'—';
+      s+='   价 '+r.price+'  24h '+(r.chg>=0?'+':'')+r.chg.toFixed(2)+'%\n';
+      s+='   CVD '+cs+'  |  '+hb+'\n';
+      s+='   https://www.binance.com/en/futures/'+sym+'\n';
+    }
+  });
+  if(syms.length>10) s+='\n…另有 '+(syms.length-10)+' 个标的未列出\n';
+  s+='\n━━━━━━━━━━━━━━\n仅为技术形态提示，非投资建议。';
+  return s;
+}
+function findPatternObj(r,type){
+  if(!r) return null;
+  if(r.triangle&&r.triangle.type===type) return r.triangle;
+  const m=(r.structural||[]).filter(function(p){return p.type===type;})[0];
+  return m||null;
+}
+/* ==================== CONTROLS ==================== */
+function toggleMTF(){
+  state.mtfOnly=!state.mtfOnly;
+  const el=document.getElementById('mtfToggle');
+  el.textContent='多周期同向：'+(state.mtfOnly?'开':'关'); el.classList.toggle('on',state.mtfOnly);
+  renderSection();
+}
+function toggleAuto(){
+  state.autoOn=!state.autoOn;
+  const el=document.getElementById('autoToggle');
+  el.textContent='自动刷新：'+(state.autoOn?'开':'关'); el.classList.toggle('on',state.autoOn);
+  if(state.autoTimer){ clearInterval(state.autoTimer); state.autoTimer=null; }
+  if(state.autoOn) state.autoTimer=setInterval(function(){ if(!state.scanning) runScan(); }, AUTO_MS[state.tf]||9e5);
+}
+function toggleSens(){
+  state.sensOn=!state.sensOn;
+  const el=document.getElementById('sensToggle');
+  el.textContent='参数敏感性：'+(state.sensOn?'开':'关'); el.classList.toggle('on',state.sensOn);
+  if(state.sensOn&&state.backtest&&!state.scanning) runScan();
+  else renderSection();
+}
+function onSearch(v){ state.query=(v||'').trim().toLowerCase(); renderSection(); }
+function onCostChange(){
+  const c=parseFloat(document.getElementById('costInp').value), s=parseFloat(document.getElementById('stopInp').value);
+  state.cost=isNaN(c)?0:Math.max(0,c); state.stop=isNaN(s)?0:Math.max(0,s);
+  if(!state.backtest||state.scanning) return;
+  // re-score existing signals without refetching anything
+  PARAMS={zz:0.04,volMult:1.2,name:'基准'};
+  const bt=runBacktestFrom(PARAMS,state.cost,state.stop);
+  state.backtest={events:bt.events,agg:bt.agg,aggIS:bt.aggIS,aggOOS:bt.aggOOS,baseline:bt.baseline,
+    baselineIS:bt.baselineIS,baselineOOS:bt.baselineOOS,symbols:Object.keys(state.results).length,tf:state.tf,bars:TF_LIMIT[state.tf]};
+  document.getElementById('cnt_verify').textContent=bt.events.length;
+  if(state.sens){ state.sens=null; }
+  renderSection();
+}
+function toggleFunding(){
+  state.fundingOn=!state.fundingOn;
+  const el=document.getElementById('fundToggle');
+  el.textContent='计入资金费率：'+(state.fundingOn?'开':'关'); el.classList.toggle('on',state.fundingOn);
+  onCostChange();
+}
+async function loadWatch(){ try{ const r=await window.storage.get('watchlist',false); if(r&&r.value) JSON.parse(r.value).forEach(function(s){state.watch.add(s);}); }catch(e){} }
+async function saveWatch(){ try{ await window.storage.set('watchlist',JSON.stringify(Array.from(state.watch)),false); }catch(e){} }
+function toggleWatch(e,s){ e.stopPropagation(); if(state.watch.has(s)) state.watch.delete(s); else state.watch.add(s); saveWatch(); updateCounts(); renderSection(); }
+
+/* ==================== CSV EXPORT ==================== */
+let CSV_ROWS=[];
+function exportCSV(e){
+  if(e) e.stopPropagation();
+  if(!CSV_ROWS.length) return;
+  const csv=CSV_ROWS.map(function(r){ return r.map(function(c){ return '"'+String(c).replace(/"/g,'""')+'"'; }).join(','); }).join('\n');
+  const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='trading-scan-'+state.activeTab+'-'+state.tf+'.csv';
+  a.click(); URL.revokeObjectURL(a.href);
+}
+
+/* ==================== TAB RENDERERS ==================== */
+function renderSanjiao(){
+  let list=Object.values(state.results).filter(function(r){return r.triangle&&qFilter(r.sym);});
+  const all=list.slice();
+  if(state.sanjiaoFilter==='up') list=list.filter(function(r){return r.triangle.dir==='up';});
+  if(state.sanjiaoFilter==='down') list=list.filter(function(r){return r.triangle.dir==='down';});
+  const pre=list.length;
+  list=list.filter(function(r){return mtfPass(r.triangle.dir,r);}).sort(function(a,b){return b.triangle.score-a.triangle.score;});
+  CSV_ROWS=[['标的','周期','类型','突破状态','高周期','强度','收窄%','位置%','24h%']].concat(list.map(function(r){
+    const t=r.triangle;
+    return [r.sym,state.tf,t.type,brkText(t.brk),r.htfBias?r.htfBias.dir:'',Math.round(t.score),t.narrow,t.position,r.chg.toFixed(2)];
+  }));
+  const empty=loadingOrEmpty(list,'本轮扫描池中未检测到符合条件的三角形态。');
+  const up=all.filter(function(r){return r.triangle.dir==='up';}).length, dn=all.filter(function(r){return r.triangle.dir==='down';}).length;
+  const rows=list.map(function(r){
+    const t=r.triangle;
+    return '<tr class="'+(state.watch.has(r.sym)?'watch':'')+'" onclick="openDetail(\''+r.sym+'\')"><td>'+starHtml(r.sym)+'</td>'+symCell(r.sym)+
+      '<td class="pd">'+state.tf+'</td><td class="typ">'+t.type+'</td><td>'+brkChip(t.brk,t.dir||'wait')+'</td><td>'+cvdChip(r.cvdSlope)+'</td><td>'+htfChip(r)+'</td><td>'+scoreCell(t.score)+'</td>'+
+      '<td class="stack"><div class="m">触点 '+t.touchH+'上/'+t.touchL+'下</div><div class="mid">收窄 '+t.narrow+'%</div></td>'+
+      '<td class="stack"><div class="mid">位置 '+t.position+'%</div><div class="s">'+(t.apexDist!==null?(t.apexDist>=0?('距顶点 '+t.apexDist+'根'):'已过顶点'):'—')+'</div></td>'+
+      '<td>'+sparklineSVG(r.closesSpark)+'</td></tr>';
+  }).join('');
+  return '<div class="sec-title"><h3>三角形态</h3><span class="n">'+all.length+'</span>'+csvBtn()+'</div><div class="sec-desc">'+state.tf+' 周期 · 突破需连续2根收盘站稳+放量确认</div>'+
+    '<div class="subtabs"><div class="subtab '+(state.sanjiaoFilter==='all'?'active':'')+'" onclick="setSJ(\'all\')">全部 '+all.length+'</div>'+
+    '<div class="subtab '+(state.sanjiaoFilter==='up'?'active':'')+'" onclick="setSJ(\'up\')"><span class="up">↑</span> 向上 '+up+'</div>'+
+    '<div class="subtab '+(state.sanjiaoFilter==='down'?'active':'')+'" onclick="setSJ(\'down\')"><span class="down">↓</span> 向下 '+dn+'</div></div>'+
+    mtfNote(list.length,pre)+
+    (empty||('<div class="tbl-wrap"><table><thead><tr><th></th><th>标的</th><th>周期</th><th>类型</th><th>突破状态</th><th>CVD</th><th>高周期</th><th>强度</th><th>触点/收窄</th><th>位置/顶点</th><th>近30根</th></tr></thead><tbody>'+rows+'</tbody></table></div>'));
+}
+function setSJ(f){ state.sanjiaoFilter=f; renderSection(); }
+function renderXingtai(){
+  const raw=[]; Object.values(state.results).forEach(function(r){ if(qFilter(r.sym)) (r.structural||[]).forEach(function(p){ raw.push({r:r,p:p}); }); });
+  const pre=raw.length;
+  const flat=raw.filter(function(x){return mtfPass(x.p.dir,x.r);}).sort(function(a,b){return b.p.score-a.p.score;});
+  CSV_ROWS=[['标的','形态','方向','突破状态','高周期','强度','24h%']].concat(flat.map(function(x){
+    return [x.r.sym,x.p.type,x.p.dir,brkText(x.p.brk),x.r.htfBias?x.r.htfBias.dir:'',Math.round(x.p.score),x.r.chg.toFixed(2)];
+  }));
+  const empty=loadingOrEmpty(flat,'本轮扫描池中未检测到符合条件的结构形态。');
+  const rows=flat.map(function(x){
+    return '<tr onclick="openDetail(\''+x.r.sym+'\')"><td>'+starHtml(x.r.sym)+'</td>'+symCell(x.r.sym)+
+      '<td class="typ">'+x.p.type+'</td><td>'+brkChip(x.p.brk,x.p.dir)+'</td><td>'+cvdChip(x.r.cvdSlope)+'</td><td>'+htfChip(x.r)+'</td><td>'+scoreCell(x.p.score)+'</td>'+
+      '<td class="stack"><div class="s">'+chgCell(x.r)+' 24h</div></td><td>'+sparklineSVG(x.r.closesSpark)+'</td></tr>';
+  }).join('');
+  return '<div class="sec-title"><h3>结构形态</h3><span class="n">'+flat.length+'</span>'+csvBtn()+'</div><div class="sec-desc">头肩顶/底、双重顶/底、楔形 · 跨类型区间重叠去重后只留最强2个</div>'+
+    mtfNote(flat.length,pre)+
+    (empty||('<div class="tbl-wrap"><table><thead><tr><th></th><th>标的</th><th>形态</th><th>突破状态</th><th>CVD</th><th>高周期</th><th>强度</th><th>24h</th><th>近30根</th></tr></thead><tbody>'+rows+'</tbody></table></div>'));
+}
+function renderXiebo(){
+  const raw=[]; Object.values(state.results).forEach(function(r){ if(qFilter(r.sym)) (r.harmonics||[]).forEach(function(p){ raw.push({r:r,p:p}); }); });
+  const pre=raw.length;
+  const flat=raw.filter(function(x){return mtfPass(x.p.bull?'up':'down',x.r);}).sort(function(a,b){return b.p.score-a.p.score;});
+  CSV_ROWS=[['标的','形态','方向','阶段','强度','关键位','24h%']].concat(flat.map(function(x){
+    const p=x.p;
+    return [x.r.sym,p.pattern,p.bull?'看涨':'看跌',p.status==='completed'?'已完成':'形成中',Math.round(p.score),
+      p.status==='completed'?p.dPrice:(p.przLow.toPrecision(6)+'~'+p.przHigh.toPrecision(6)),x.r.chg.toFixed(2)];
+  }));
+  const empty=loadingOrEmpty(flat,'本轮扫描池中未匹配到符合条件的谐波比例结构。');
+  const rows=flat.map(function(x){
+    const p=x.p;
+    const d=p.status==='completed'?('<div class="mid">D 点 '+p.dPrice.toPrecision(6)+'</div><div class="s">五点已确认</div>')
+      :('<div class="mid">潜在完成区 PRZ</div><div class="s">'+p.przLow.toPrecision(6)+' ~ '+p.przHigh.toPrecision(6)+'</div>');
+    return '<tr onclick="openDetail(\''+x.r.sym+'\')"><td>'+starHtml(x.r.sym)+'</td>'+symCell(x.r.sym)+
+      '<td class="typ">'+p.pattern+'</td><td>'+statusChip(p.bull?'up':'down',p.bull?'看涨(底部)':'看跌(顶部)')+'</td>'+
+      '<td>'+statusChip('wait',p.status==='completed'?'已完成':'形成中·等待D点')+'</td><td>'+htfChip(x.r)+'</td><td>'+scoreCell(p.score)+'</td>'+
+      '<td class="stack">'+d+'</td><td>'+sparklineSVG(x.r.closesSpark)+'</td></tr>';
+  }).join('');
+  return '<div class="sec-title"><h3>谐波形态 XABCD</h3><span class="n">'+flat.length+'</span>'+csvBtn()+'</div><div class="sec-desc">Gartley / Bat / Butterfly / Crab 标准 Fibonacci 比例匹配</div>'+
+    mtfNote(flat.length,pre)+
+    (empty||('<div class="tbl-wrap"><table><thead><tr><th></th><th>标的</th><th>形态</th><th>方向</th><th>阶段</th><th>高周期</th><th>强度</th><th>关键位</th><th>近30根</th></tr></thead><tbody>'+rows+'</tbody></table></div>'));
+}
+function renderChanlun(){
+  const list=Object.values(state.results).filter(function(r){return r.chan&&r.chan.zs.length&&qFilter(r.sym);}).sort(function(a,b){return b.chan.score-a.chan.score;});
+  CSV_ROWS=[['标的','笔数','中枢下沿','中枢上沿','价格位置','强度','线段方向']].concat(list.map(function(r){
+    const z=r.chan.zs[r.chan.zs.length-1], ld=r.chan.duans[r.chan.duans.length-1];
+    return [r.sym,r.chan.bis.length,z.ZD.toPrecision(6),z.ZG.toPrecision(6),
+      r.price>z.ZG?'上方':(r.price<z.ZD?'下方':'内部'),Math.round(r.chan.score),ld?(ld.dir===1?'向上':'向下'):''];
+  }));
+  const empty=loadingOrEmpty(list,'本轮扫描池中暂无标的形成三笔重叠中枢。');
+  const rows=list.map(function(r){
+    const z=r.chan.zs[r.chan.zs.length-1], lb=r.chan.bis[r.chan.bis.length-1], ld=r.chan.duans[r.chan.duans.length-1];
+    const pos=r.price>z.ZG?'在中枢上方':(r.price<z.ZD?'在中枢下方':'在中枢内');
+    return '<tr onclick="openDetail(\''+r.sym+'\')"><td>'+starHtml(r.sym)+'</td>'+symCell(r.sym)+
+      '<td class="stack"><div class="mid">笔数 '+r.chan.bis.length+'</div><div class="s">最新笔 '+(lb&&lb.to.price>lb.from.price?'向上':'向下')+'</div></td>'+
+      '<td class="stack"><div class="mid">中枢区间</div><div class="s">'+z.ZD.toPrecision(6)+' ~ '+z.ZG.toPrecision(6)+'</div></td>'+
+      '<td>'+statusChip(r.price>z.ZG?'up':(r.price<z.ZD?'down':'wait'),pos)+'</td><td>'+scoreCell(r.chan.score)+'</td>'+
+      '<td class="stack"><div class="s">线段 '+(ld?(ld.dir===1?'向上':'向下'):'—')+'</div></td><td>'+sparklineSVG(r.closesSpark)+'</td></tr>';
+  }).join('');
+  return '<div class="sec-title"><h3>缠论结构</h3><span class="n">'+list.length+'</span>'+csvBtn()+'</div>'+
+    '<div class="infobox">仅展示已形成中枢（连续三笔重叠）的标的。线段用简化规则，非唯一权威算法。</div>'+
+    (empty||('<div class="tbl-wrap"><table><thead><tr><th></th><th>标的</th><th>笔结构</th><th>最新中枢</th><th>价格位置</th><th>强度</th><th>线段</th><th>近30根</th></tr></thead><tbody>'+rows+'</tbody></table></div>'));
+}
+function renderAiliate(){
+  const raw=[]; Object.values(state.results).forEach(function(r){ if(qFilter(r.sym)) (r.elliott||[]).forEach(function(c){ raw.push({r:r,c:c}); }); });
+  const pre=raw.length;
+  const flat=raw.filter(function(x){return mtfPass(x.c.dir,x.r);}).sort(function(a,b){return b.c.score-a.c.score;});
+  CSV_ROWS=[['标的','方向','强度','3浪/1浪','5浪/3浪']].concat(flat.map(function(x){
+    return [x.r.sym,x.c.dir==='up'?'上升5浪':'下降5浪',Math.round(x.c.score),x.c.w3w1,x.c.w5w3];
+  }));
+  const empty=loadingOrEmpty(flat,'本轮扫描池中未找到满足条件的候选序列。');
+  const rows=flat.map(function(x){
+    return '<tr onclick="openDetail(\''+x.r.sym+'\')"><td>'+starHtml(x.r.sym)+'</td>'+symCell(x.r.sym)+
+      '<td>'+statusChip(x.c.dir==='up'?'up':'down',x.c.dir==='up'?'上升5浪候选':'下降5浪候选')+'</td><td>'+scoreCell(x.c.score)+'</td>'+
+      '<td class="stack"><div class="mid">3浪/1浪 '+x.c.w3w1+'×</div><div class="s">5浪/3浪 '+x.c.w5w3+'×</div></td>'+
+      '<td class="s">满足全部3条硬性规则</td><td>'+sparklineSVG(x.r.closesSpark)+'</td></tr>';
+  }).join('');
+  return '<div class="sec-title"><h3>艾略特波浪候选</h3><span class="n">'+flat.length+'</span>'+csvBtn()+'</div>'+
+    '<div class="infobox">只用三条硬性规则筛候选，同一标的可能多个也可能没有——如实反映波浪理论允许多解。</div>'+
+    mtfNote(flat.length,pre)+
+    (empty||('<div class="tbl-wrap"><table><thead><tr><th></th><th>标的</th><th>方向</th><th>强度</th><th>浪幅比例</th><th>规则校验</th><th>近30根</th></tr></thead><tbody>'+rows+'</tbody></table></div>'));
+}
+function cvdChip(s){
+  if(s===null||s===undefined) return '<span class="pd">—</span>';
+  const c=s>0.05?'up':(s<-0.05?'down':'wait');
+  const txt=(s>=0?'+':'')+(s*100).toFixed(1)+'%';
+  return '<span class="status '+c+'" title="近10根净主动成交量 / 总成交量">'+txt+'</span>';
+}
+function renderFlow(){
+  const all=Object.values(state.results).filter(function(r){return qFilter(r.sym);});
+  const early=[]; all.forEach(function(r){ (r.early||[]).forEach(function(e){ early.push({r:r,e:e}); }); });
+  early.sort(function(a,b){ return Math.abs(a.e.dist)-Math.abs(b.e.dist); });
+  const divs=all.filter(function(r){return r.cvdDiv;}).sort(function(a,b){return a.cvdDiv.age-b.cvdDiv.age;});
+  CSV_ROWS=[['标的','类型','方向','距离%','CVD斜率','OI变化%']].concat(
+    early.map(function(x){ return [x.r.sym,x.e.label,x.e.dir,x.e.dist.toFixed(2),(x.e.cvd*100).toFixed(1),x.e.oi!==null?x.e.oi.toFixed(2):'']; })
+  );
+  const eRows=early.map(function(x){
+    const r=x.r,e=x.e;
+    return '<tr onclick="openDetail(\''+r.sym+'\')"><td>'+starHtml(r.sym)+'</td>'+symCell(r.sym)+
+      '<td class="typ">'+e.label+'</td>'+
+      '<td>'+statusChip(e.dir,e.dir==='up'?'资金偏多':'资金偏空')+'</td>'+
+      '<td class="stack"><div class="m">'+(e.dist>=0?'+':'')+e.dist.toFixed(2)+'%</div><div class="s">距该轨道</div></td>'+
+      '<td>'+cvdChip(e.cvd)+'</td>'+
+      '<td class="pd">'+(e.oi!==null?((e.oi>=0?'+':'')+e.oi.toFixed(2)+'%'):'—')+'</td>'+
+      '<td>'+sparklineSVG(r.closesSpark)+'</td></tr>';
+  }).join('');
+  const dRows=divs.map(function(r){
+    const d=r.cvdDiv;
+    return '<tr onclick="openDetail(\''+r.sym+'\')"><td>'+starHtml(r.sym)+'</td>'+symCell(r.sym)+
+      '<td>'+statusChip(d.dir,d.kind)+'</td>'+
+      '<td class="stack"><div class="mid">价格 '+d.priceFrom.toPrecision(6)+' → '+d.priceTo.toPrecision(6)+'</div><div class="s">但 CVD 未同步创新'+(d.dir==='down'?'高':'低')+'</div></td>'+
+      '<td class="pd">'+d.age+' 根前</td>'+
+      '<td>'+cvdChip(r.cvdSlope)+'</td>'+
+      '<td class="pd">'+(r.oiChg10!==null?((r.oiChg10>=0?'+':'')+r.oiChg10.toFixed(2)+'%'):'—')+'</td>'+
+      '<td>'+sparklineSVG(r.closesSpark)+'</td></tr>';
+  }).join('');
+  const oiRows=all.filter(function(r){return r.oiRead;})
+    .sort(function(a,b){return Math.abs(b.oiChg10||0)-Math.abs(a.oiChg10||0);}).slice(0,20).map(function(r){
+    const o=r.oiRead;
+    return '<tr onclick="openDetail(\''+r.sym+'\')"><td>'+starHtml(r.sym)+'</td>'+symCell(r.sym)+
+      '<td>'+statusChip(o.tone,o.label)+'</td>'+
+      '<td class="stack"><div class="mid">价 '+(r.barChg10>=0?'+':'')+r.barChg10.toFixed(2)+'% · 仓 '+(r.oiChg10>=0?'+':'')+r.oiChg10.toFixed(2)+'%</div><div class="s">'+o.note+'</div></td>'+
+      '<td>'+cvdChip(r.cvdSlope)+'</td><td>'+sparklineSVG(r.closesSpark)+'</td></tr>';
+  }).join('');
+  if(!state.scanned.length) return '<div class="loading-row">点击右上角「开始扫描」拉取真实 Binance 行情数据</div>';
+  return '<div class="sec-title"><h3>资金流 · 早期预警</h3><span class="n">'+early.length+'</span>'+csvBtn()+'</div>'+
+    '<div class="infobox"><b>这一页专门用来弥补形态检测的滞后。</b>形态要等突破并连续2根收盘确认才成立，那时行情往往已经走了一段。下面三块用订单流数据抢在确认之前给出线索：<br>'+
+    '<b>① 临界预警</b>——形态<b>尚未突破</b>，但价格已逼近轨道（2.5% 以内）且 CVD 明显偏向该方向，属于"可能即将突破"的提示，<b>不是突破本身</b>，会有相当比例不兑现。<br>'+
+    '<b>② CVD 背离</b>——价格创新高但主动买入的净量没跟上（顶背离），或创新低而净卖压减弱（底背离），是典型的领先信号，但噪音也大。<br>'+
+    '<b>③ 持仓量解读</b>——价涨仓增=增量资金推动；价涨仓减=空头回补，续航力弱。用来判断突破的"质量"。</div>'+
+    '<div class="warnbox"><b>数据可得性限制（重要）</b>：CVD 由K线自带的主动买入量字段计算，有完整历史，已纳入回测验证（见"回看验证"页中的"+CVD同向"变体）。<b>但持仓量(OI)历史接口只提供最近约30天</b>，长度不足以做长周期回测，因此 OI 只用于当前判读、<b>没有经过历史验证</b>——请把它当作参考信息而非已验证信号。</div>'+
+    (early.length?('<div class="tbl-wrap"><table><thead><tr><th></th><th>标的</th><th>逼近的轨道</th><th>资金方向</th><th>距离</th><th>CVD(10根)</th><th>OI(10根)</th><th>近30根</th></tr></thead><tbody>'+eRows+'</tbody></table></div>'):emptyState('当前没有标的处于"逼近轨道且资金流同向"的临界状态。'))+
+    '<div class="sec-title" style="margin-top:26px;"><h3>CVD 背离</h3><span class="n">'+divs.length+'</span></div>'+
+    (divs.length?('<div class="tbl-wrap"><table><thead><tr><th></th><th>标的</th><th>类型</th><th>价格与CVD</th><th>发生</th><th>CVD(10根)</th><th>OI(10根)</th><th>近30根</th></tr></thead><tbody>'+dRows+'</tbody></table></div>'):emptyState('近 15 根内未检测到 CVD 背离。'))+
+    '<div class="sec-title" style="margin-top:26px;"><h3>持仓量变化解读</h3><span class="n">最近10根 · 变动最大的20个</span></div>'+
+    (oiRows?('<div class="tbl-wrap"><table><thead><tr><th></th><th>标的</th><th>性质</th><th>价格与持仓</th><th>CVD(10根)</th><th>近30根</th></tr></thead><tbody>'+oiRows+'</tbody></table></div>'):emptyState('持仓量接口暂无数据（该接口仅覆盖最近约30天，且部分标的可能缺失）。'));
+}
+/* ==================== OVERVIEW (at-a-glance) ==================== */
+function collectSignals(){
+  const out=[];
+  Object.values(state.results).forEach(function(r){
+    if(!qFilter(r.sym)) return;
+    if(r.triangle&&r.triangle.dir&&r.triangle.brk.state!=='wait'){
+      out.push({r:r,cat:'三角',name:r.triangle.type,dir:r.triangle.dir,score:r.triangle.score,
+        state:r.triangle.brk.state,note:'收窄 '+r.triangle.narrow+'%'});
+    }
+    (r.structural||[]).forEach(function(p){
+      if(p.brk&&p.brk.state!=='wait')
+        out.push({r:r,cat:'形态',name:p.type,dir:p.dir,score:p.score,state:p.brk.state,note:'颈线突破'});
+    });
+    (r.harmonics||[]).forEach(function(p){
+      if(p.status==='completed')
+        out.push({r:r,cat:'谐波',name:p.pattern.split(' ')[0],dir:p.bull?'up':'down',score:p.score,state:'confirmed',note:'D点已确认'});
+    });
+    if(r.chan&&r.chan.brkDir)
+      out.push({r:r,cat:'缠论',name:'中枢突破',dir:r.chan.brkDir,score:r.chan.score,state:'confirmed',note:'突破中枢边界'});
+    if(r.santongFlag)
+      out.push({r:r,cat:'三通',name:'超跌共振',dir:'up',score:70,state:'confirmed',note:'RSI '+r.rsi14.toFixed(0)});
+    if(r.skdjBottom||r.skdjTop)
+      out.push({r:r,cat:'SKDJ',name:r.skdjBottom?'底部共振':'顶部共振',dir:r.skdjBottom?'up':'down',score:60,state:'confirmed',
+        note:'K日'+r.kD.toFixed(0)+'/K周'+r.kW.toFixed(0)});
+    (r.early||[]).forEach(function(e){
+      out.push({r:r,cat:'预警',name:e.label,dir:e.dir,score:45,state:'early',note:'距 '+Math.abs(e.dist).toFixed(1)+'%'});
+    });
+  });
+  return out;
+}
+function renderOverview(){
+  if(!state.scanned.length) return '<div class="loading-row">点击右上角「开始扫描」拉取真实 Binance 行情数据</div>';
+  const sigs=collectSignals();
+  // agreement bonus: multiple signals on same symbol pointing the same way
+  const bySym={};
+  sigs.forEach(function(s){ (bySym[s.r.sym]=bySym[s.r.sym]||[]).push(s); });
+  const cards=Object.keys(bySym).map(function(sym){
+    const items=bySym[sym], r=items[0].r;
+    const up=items.filter(function(i){return i.dir==='up';}).length;
+    const dn=items.length-up;
+    const net=up-dn;
+    const conf=items.filter(function(i){return i.state==='confirmed';}).length;
+    const best=Math.max.apply(null,items.map(function(i){return i.score;}));
+    const htfAgree = r.htfBias && ((net>0&&r.htfBias.dir==='up')||(net<0&&r.htfBias.dir==='down'));
+    const cvdAgree = (net>0&&r.cvdSlope>0.05)||(net<0&&r.cvdSlope<-0.05);
+    const rank=best+conf*12+Math.abs(net)*6+(htfAgree?15:0)+(cvdAgree?12:0);
+    return {sym:sym,r:r,items:items,net:net,conf:conf,best:best,htfAgree:htfAgree,cvdAgree:cvdAgree,rank:rank};
+  }).sort(function(a,b){return b.rank-a.rank;});
+  CSV_ROWS=[['标的','方向','信号数','已确认数','最高强度','高周期同向','CVD同向','24h%','信号明细']].concat(
+    cards.map(function(c){
+      return [c.sym,c.net>0?'偏多':(c.net<0?'偏空':'混合'),c.items.length,c.conf,Math.round(c.best),
+        c.htfAgree?'是':'否',c.cvdAgree?'是':'否',c.r.chg.toFixed(2),
+        c.items.map(function(i){return i.cat+':'+i.name+(i.dir==='up'?'↑':'↓');}).join(' | ')];
+    }));
+  if(!cards.length) return '<div class="sec-title"><h3>总览</h3></div>'+emptyState('本轮扫描池中没有产生任何信号。可以换个周期，或把扫描范围调大。');
+  const rows=cards.map(function(c){
+    const side=c.net>0?'up':(c.net<0?'down':'wait');
+    const sideTxt=c.net>0?'偏多':(c.net<0?'偏空':'多空混合');
+    const tags=c.items.sort(function(a,b){return b.score-a.score;}).map(function(i){
+      const cl=i.state==='early'?'':'hot';
+      return '<span class="microtag '+cl+'" title="'+i.note+'">'+i.cat+'·'+i.name+(i.dir==='up'?'↑':'↓')+(i.state==='tentative'?'(暂)':'')+(i.state==='early'?'(预警)':'')+'</span>';
+    }).join('');
+    return '<tr class="'+(state.watch.has(c.sym)?'watch':'')+'" onclick="openDetail(\''+c.sym+'\')"><td>'+starHtml(c.sym)+'</td>'+symCell(c.sym)+
+      '<td>'+statusChip(side,sideTxt)+'</td>'+
+      '<td class="stack"><div class="m">'+c.items.length+' 个信号</div><div class="s">'+c.conf+' 个已确认</div></td>'+
+      '<td>'+scoreCell(c.best)+'</td>'+
+      '<td class="stack"><div class="s">'+(c.htfAgree?'<span style="color:var(--up)">高周期同向 ✓</span>':'<span style="color:var(--text-faint)">高周期不支持</span>')+'</div>'+
+      '<div class="s">'+(c.cvdAgree?'<span style="color:var(--up)">CVD同向 ✓</span>':'<span style="color:var(--text-faint)">CVD不支持</span>')+'</div></td>'+
+      '<td class="tagset">'+tags+'</td>'+
+      '<td class="stack"><div class="s">'+chgCell(c.r)+'</div></td>'+
+      '<td>'+sparklineSVG(c.r.closesSpark)+'</td></tr>';
+  }).join('');
+  const totConf=sigs.filter(function(s){return s.state==='confirmed';}).length;
+  const totEarly=sigs.filter(function(s){return s.state==='early';}).length;
+  return '<div class="sec-title"><h3>总览</h3><span class="n">'+cards.length+' 个标的 / '+sigs.length+' 个信号</span>'+csvBtn()+'</div>'+
+    '<div class="sec-desc">把所有分类的信号按标的汇总到一屏，排序 = 最高强度 + 已确认数 + 方向一致度 + 高周期同向 + CVD同向。点任意一行看K线图。</div>'+
+    '<div class="infobox">本轮共 <b>'+totConf+'</b> 个已确认信号、<b>'+totEarly+'</b> 个尚未突破的预警。'+
+    '<b>排在最上面的是"多个信号方向一致 + 高周期与资金流都支持"的标的</b>——这类同时满足多个独立条件，噪音相对更低。'+
+    '标签里带"(暂)"表示仅1根收盘越线尚未确认，带"(预警)"表示形态还没突破、只是资金流已偏向。'+
+    '<b>请注意：多个信号一致并不等于胜率更高</b>，这些信号之间本身就相关（都源自同一段价格走势），不是相互独立的证据；是否真有提升，请以"回看验证"页的数据为准。</div>'+
+    '<div class="tbl-wrap"><table><thead><tr><th></th><th>标的</th><th>方向</th><th>信号数</th><th>最高强度</th><th>旁证</th><th>信号明细</th><th>24h</th><th>近30根</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+}
+function wrBar(w){
+  const c=w>=55?'#24e39b':(w>=45?'#ffb84d':'#ff5c7a');
+  return '<div class="wrbar"><i style="width:'+clamp(w,0,100)+'%;background:'+c+'"></i><b>'+w.toFixed(1)+'%</b></div>';
+}
+function hist(a){
+  if(!a||!a.length) return '';
+  const lo=-25,hi=25,B=11,c=new Array(B).fill(0);
+  a.forEach(function(v){ c[clamp(Math.floor((clamp(v,lo,hi-0.001)-lo)/((hi-lo)/B)),0,B-1)]++; });
+  const m=Math.max.apply(null,c)||1;
+  return '<div class="dist">'+c.map(function(x,i){ return '<i style="height:'+(x/m*100)+'%;background:'+(i<B/2?'#ff5c7a':'#24e39b')+';opacity:.65"></i>'; }).join('')+'</div>';
+}
+function baseForType(b,h,baseline){
+  const bs=baseline['h'+h]; if(!bs||!bs.n) return null;
+  const tot=b.up+b.down||1;
+  return {win:(bs.longWin*b.up+bs.shortWin*b.down)/tot, k:Math.round(((bs.longWinK*b.up+bs.shortWinK*b.down)/tot)), n:bs.n};
+}
+function renderVerify(){
+  if(!state.backtest) return '<div class="loading-row">回看验证会在扫描完成后自动开始。</div>';
+  const bt=state.backtest, base=bt.baseline;
+  if(!bt.agg.length) return '<div class="sec-title"><h3>历史回看验证</h3></div>'+emptyState('这一轮在 '+bt.symbols+' 个标的的历史K线上没有找到任何达到触发条件的信号，因此没有可统计的样本。');
+  CSV_ROWS=[['形态','样本数','持有期','胜率%','置信区间下限','置信区间上限','基准胜率%','超额pp','p值','净均值%','净中位数%']];
+  const rows=bt.agg.map(function(b){
+    const cells=HORIZONS.map(function(h){
+      const s=b.stat['h'+h];
+      if(!s||!s.n) return '<td class="s">—</td>';
+      const bf=baseForType(b,h,base);
+      const ci=wilsonCI(s.k,s.n);
+      const edge=bf?s.winRate-bf.win:null;
+      const p=bf?twoPropP(s.k,s.n,bf.k,bf.n):1;
+      const ec=edge===null?'var(--text-faint)':(edge>=3?'var(--up)':(edge<=-3?'var(--down)':'var(--text-faint)'));
+      CSV_ROWS.push([b.type,s.n,h+'根',s.winRate.toFixed(1),ci[0].toFixed(1),ci[1].toFixed(1),
+        bf?bf.win.toFixed(1):'',edge!==null?edge.toFixed(1):'',p.toFixed(4),s.mean.toFixed(2),s.median.toFixed(2)]);
+      return '<td class="stack"><div>'+wrBar(s.winRate)+'</div>'+
+        '<div class="s">95%CI '+ci[0].toFixed(0)+'–'+ci[1].toFixed(0)+'%</div>'+
+        '<div class="s">超额 <span style="color:'+ec+';font-family:var(--mono)">'+(edge!==null?(edge>=0?'+':'')+edge.toFixed(1)+'pp':'—')+'</span> '+
+        (p<0.05?'<span class="sig yes">显著 p='+p.toFixed(3)+'</span>':'<span class="sig no">不显著 p='+(p<0.999?p.toFixed(3):'1.00')+'</span>')+'</div>'+
+        '<div class="s">净均值 '+(s.mean>=0?'+':'')+s.mean.toFixed(2)+'% · 中位 '+(s.median>=0?'+':'')+s.median.toFixed(2)+'%</div></td>';
+    }).join('');
+    const warn=b.n<20?'<div class="s" style="color:var(--amber)">样本不足</div>':'';
+    return '<tr class="nohover"><td class="typ"><b>'+b.type+'</b><div class="s">'+b.up+'↑ / '+b.down+'↓</div>'+warn+'</td><td class="pd">'+b.n+'</td>'+cells+
+      '<td>'+(b.stat.h20&&b.stat.h20.all?hist(b.stat.h20.all):'')+'</td></tr>';
+  }).join('');
+  const bl=HORIZONS.map(function(h){
+    const s=base['h'+h];
+    if(!s||!s.n) return '<td class="s">—</td>';
+    return '<td class="stack"><div class="mid">做多 '+s.longWin.toFixed(1)+'% / 做空 '+s.shortWin.toFixed(1)+'%</div><div class="s">净均值 '+(s.mean>=0?'+':'')+s.mean.toFixed(2)+'%</div></td>';
+  }).join('');
+  let oosHtml='';
+  if(bt.aggIS&&bt.aggOOS){
+    const types={};
+    bt.aggIS.forEach(function(b){ types[b.type]=1; }); bt.aggOOS.forEach(function(b){ types[b.type]=1; });
+    function edgeOf(agg,baseline,type,h){
+      const b=agg.filter(function(x){return x.type===type;})[0];
+      if(!b||!b.stat['h'+h]||!b.stat['h'+h].n) return null;
+      const s=b.stat['h'+h], bf=baseForType(b,h,baseline);
+      if(!bf) return null;
+      return {edge:s.winRate-bf.win, n:s.n, win:s.winRate};
+    }
+    const orows=Object.keys(types).map(function(t){
+      const is=edgeOf(bt.aggIS,bt.baselineIS,t,20), oos=edgeOf(bt.aggOOS,bt.baselineOOS,t,20);
+      function cell(x){
+        if(!x) return '<td class="s">样本不足</td>';
+        const c=x.edge>=3?'var(--up)':(x.edge<=-3?'var(--down)':'var(--text-faint)');
+        return '<td class="stack"><div class="mid" style="color:'+c+'">'+(x.edge>=0?'+':'')+x.edge.toFixed(1)+'pp</div><div class="s">胜率 '+x.win.toFixed(1)+'% · n='+x.n+'</div></td>';
+      }
+      let verdict='<span class="sig no">样本不足</span>';
+      if(is&&oos){
+        if(is.edge>=3&&oos.edge>=3) verdict='<span class="sig yes">两段都为正</span>';
+        else if(is.edge>=3&&oos.edge<0) verdict='<span class="sig no" style="color:var(--down)">样本外失效</span>';
+        else if(Math.abs(is.edge)<3&&Math.abs(oos.edge)<3) verdict='<span class="sig no">两段均近零</span>';
+        else verdict='<span class="sig no">不一致</span>';
+      }
+      return '<tr class="nohover"><td class="typ">'+t+'</td>'+cell(is)+cell(oos)+'<td>'+verdict+'</td></tr>';
+    }).join('');
+    oosHtml='<div class="sec-title" style="margin-top:26px;"><h3>样本外检验</h3></div>'+
+      '<div class="infobox">把回测窗口<b>按时间对半切开</b>：前半段为<b>样本内</b>，后半段为<b>样本外</b>，两段各自与自己时段的随机入场基准对比（20根持有期）。<b>只有两段都为正，这个形态才值得继续关注</b>；如果样本内亮眼而样本外失效，说明前半段的表现很可能是巧合或已被参数迎合。这是防过拟合最硬的一道检验，比参数敏感性更能说明问题。</div>'+
+      '<div class="tbl-wrap"><table><thead><tr><th>形态</th><th>样本内超额（前半段）</th><th>样本外超额（后半段）</th><th>结论</th></tr></thead><tbody>'+orows+'</tbody></table></div>'+
+      '<div class="foot-note">注意：对半切分后每段样本量只有原来一半，样本外结论本身也带较大不确定性；n 很小时任何结论都不可靠。</div>';
+  }
+  let sensHtml='';
+  if(state.sens){
+    const types={};
+    state.sens.forEach(function(sv){ sv.agg.forEach(function(b){ types[b.type]=1; }); });
+    const srows=Object.keys(types).map(function(t){
+      const cells=state.sens.map(function(sv){
+        const b=sv.agg.filter(function(x){return x.type===t;})[0];
+        if(!b||!b.stat.h20||!b.stat.h20.n) return '<td class="s">—</td>';
+        const bf=baseForType(b,20,sv.baseline);
+        const e=bf?b.stat.h20.winRate-bf.win:null;
+        const c=e===null?'var(--text-faint)':(e>=3?'var(--up)':(e<=-3?'var(--down)':'var(--text-faint)'));
+        return '<td class="stack"><div class="mid" style="color:'+c+'">'+(e!==null?(e>=0?'+':'')+e.toFixed(1)+'pp':'—')+'</div><div class="s">n='+b.stat.h20.n+'</div></td>';
+      }).join('');
+      return '<tr class="nohover"><td class="typ">'+t+'</td>'+cells+'</tr>';
+    }).join('');
+    sensHtml='<div class="sec-title" style="margin-top:26px;"><h3>参数敏感性检验</h3></div>'+
+      '<div class="infobox">同一套逻辑在三组参数下的<b>20根持有期超额</b>。若同一形态在三列间差异很大甚至变号，说明结果<b>对参数高度敏感，很可能是过拟合</b>；三列方向一致才相对可信。</div>'+
+      '<div class="tbl-wrap"><table><thead><tr><th>形态</th>'+
+      state.sens.map(function(s){ return '<th>'+s.name+'（zz '+(s.zz*100).toFixed(0)+'% / 量 '+s.volMult+'×）</th>'; }).join('')+
+      '</tr></thead><tbody>'+srows+'</tbody></table></div>';
+  }
+  return '<div class="sec-title"><h3>历史回看验证</h3><span class="n">'+bt.events.length+' 个历史信号</span>'+csvBtn()+'</div>'+
+    '<div class="sec-desc">走查式回测 · '+bt.symbols+' 个标的 · '+bt.tf+' 周期 · 成本 '+state.cost.toFixed(2)+'% 往返 · 止损 '+(state.stop>0?state.stop.toFixed(1)+'%':'不启用')+' · 资金费率 '+(state.fundingOn?'已计入（按实际结算时点）':'未计入')+'</div>'+
+    '<div class="infobox"><b>怎么看这张表</b>：单看胜率没有意义。同一段行情里随便挑一根K线入场也有个天然胜率（下方紫色"随机入场基准"行），只有<b>超额</b>明显为正、且 p 值<b>显著</b>，这个形态才算提供了额外信息。超额在 ±3pp 以内或不显著的，基本应视为噪音。收益均为<b>净值</b>（已扣成本、已套用止损）。</div>'+
+    '<div class="warnbox">仍需注意：① 样本受<b>幸存者偏差</b>影响（可改用"按上市时间分层取样"部分缓解）；② 同时检验多形态×多持有期属<b>多重比较</b>，未做校正，偶然出现 p&lt;0.05 属正常；③ 同一标的相邻信号<b>并非独立</b>，会让 p 值偏乐观；④ 止损采用"同根K线先触发止损"的悲观假设；⑤ 仅覆盖最近一段行情环境。<b>历史表现不代表未来结果。</b></div>'+
+    '<div class="tbl-wrap"><table><thead><tr><th>形态</th><th>样本数</th><th>5根后</th><th>10根后</th><th>20根后</th><th>20根净收益分布</th></tr></thead><tbody>'+
+    '<tr class="nohover" style="background:rgba(177,140,255,.06)"><td class="typ"><b style="color:var(--violet)">随机入场基准</b><div class="s">同窗口全部K线</div></td><td class="pd">'+(base.h20&&base.h20.n?base.h20.n:0)+'</td>'+bl+'<td class="s">—</td></tr>'+
+    rows+'</tbody></table></div>'+
+    '<div class="foot-note">形态收益按方向取符号：正数表示形态方向应验。各形态基准按其多空信号比例加权，保证可比。</div>'+oosHtml+sensHtml;
+}
+function renderSkdj(){
+  const list=Object.values(state.results).filter(function(r){return (r.skdjBottom||r.skdjTop)&&qFilter(r.sym);})
+    .sort(function(a,b){ const ea=a.skdjBottom?(15-Math.min(a.kD,a.kW)):(Math.max(a.kD,a.kW)-80), eb=b.skdjBottom?(15-Math.min(b.kD,b.kW)):(Math.max(b.kD,b.kW)-80); return eb-ea; });
+  CSV_ROWS=[['标的','方向','K日','K周','24h%']].concat(list.map(function(r){ return [r.sym,r.skdjBottom?'底部共振':'顶部共振',r.kD.toFixed(1),r.kW.toFixed(1),r.chg.toFixed(2)]; }));
+  const empty=loadingOrEmpty(list,'本轮扫描池中日线/周线未同时进入 SKDJ 超买超卖区。');
+  const rows=list.map(function(r){
+    return '<tr onclick="openDetail(\''+r.sym+'\')"><td>'+starHtml(r.sym)+'</td>'+symCell(r.sym)+'<td class="pd">周/日</td>'+
+      '<td>'+statusChip(r.skdjBottom?'up':'down',r.skdjBottom?'底部共振':'顶部共振')+'</td>'+
+      '<td class="stack"><div class="mid">K(日) '+r.kD.toFixed(1)+'</div><div class="mid">K(周) '+r.kW.toFixed(1)+'</div></td>'+
+      '<td class="stack"><div class="s">'+chgCell(r)+' 24h</div></td><td>'+sparklineSVG(r.closesSpark)+'</td></tr>';
+  }).join('');
+  return '<div class="sec-title"><h3>SKDJ 多周期共振</h3><span class="n">'+list.length+'</span>'+csvBtn()+'</div>'+
+    '<div class="infobox">日线与周线 K 同时 ≤15（底部）或 ≥80（顶部），只读已收盘的最后一根。<b>固定用日线+周线，不随周期开关变化。</b></div>'+
+    (empty||('<div class="tbl-wrap"><table><thead><tr><th></th><th>标的</th><th>周期</th><th>方向</th><th>K 值</th><th>24h</th><th>近30根</th></tr></thead><tbody>'+rows+'</tbody></table></div>'));
+}
+function renderJiuzhuan(){
+  const list=Object.values(state.results).filter(function(r){return r.jiuzhuanFlag&&qFilter(r.sym);})
+    .sort(function(a,b){return (b.tdD.count+b.tdW.count)-(a.tdD.count+a.tdW.count);});
+  CSV_ROWS=[['标的','方向','日线计数','周线计数','24h%']].concat(list.map(function(r){ return [r.sym,r.jiuzhuanFlag==='up'?'涨九转':'跌九转',r.tdD.count,r.tdW.count,r.chg.toFixed(2)]; }));
+  const empty=loadingOrEmpty(list,'本轮扫描池中日线/周线未同向达到九转阈值。');
+  const rows=list.map(function(r){
+    return '<tr onclick="openDetail(\''+r.sym+'\')"><td>'+starHtml(r.sym)+'</td>'+symCell(r.sym)+
+      '<td>'+statusChip(r.jiuzhuanFlag==='up'?'down':'up',r.jiuzhuanFlag==='up'?'涨九转':'跌九转')+'</td>'+
+      '<td class="stack"><div class="mid">日线 '+r.tdD.count+'/9</div><div class="mid">周线 '+r.tdW.count+'/9</div></td>'+
+      '<td class="stack"><div class="s">'+chgCell(r)+' 24h</div></td><td>'+sparklineSVG(r.closesSpark)+'</td></tr>';
+  }).join('');
+  return '<div class="sec-title"><h3>九转重点观察</h3><span class="n">'+list.length+'</span>'+csvBtn()+'</div>'+
+    '<div class="infobox">日线、周线均连续同向计数 ≥7 且方向一致 · 固定用日线+周线。</div>'+
+    (empty||('<div class="tbl-wrap"><table><thead><tr><th></th><th>标的</th><th>方向</th><th>计数</th><th>24h</th><th>近30根</th></tr></thead><tbody>'+rows+'</tbody></table></div>'));
+}
+function renderSantong(){
+  const list=Object.values(state.results).filter(function(r){return r.santongFlag&&qFilter(r.sym);}).sort(function(a,b){return a.rsi14-b.rsi14;});
+  CSV_ROWS=[['标的','EMA120','RSI14','跌破幅度%','24h%']].concat(list.map(function(r){
+    return [r.sym,r.ema120.toPrecision(6),r.rsi14.toFixed(1),((r.ema120-r.price)/r.ema120*100).toFixed(2),r.chg.toFixed(2)];
+  }));
+  const empty=loadingOrEmpty(list,'本轮扫描池中未同时满足 EMA120 下方 + RSI 真超卖 + SKDJ 底部共振。');
+  const rows=list.map(function(r){
+    return '<tr onclick="openDetail(\''+r.sym+'\')"><td>'+starHtml(r.sym)+'</td>'+symCell(r.sym)+
+      '<td class="stack"><div class="mid">EMA120 '+r.ema120.toPrecision(6)+'</div><div class="s">跌破 '+((r.ema120-r.price)/r.ema120*100).toFixed(2)+'%</div></td>'+
+      '<td class="pd">RSI14 '+r.rsi14.toFixed(1)+'</td><td class="stack"><div class="s">SKDJ 底部共振 ✓</div></td><td>'+sparklineSVG(r.closesSpark)+'</td></tr>';
+  }).join('');
+  return '<div class="sec-title"><h3>三通</h3><span class="n">'+list.length+'</span>'+csvBtn()+'</div>'+
+    '<div class="infobox">日线 EMA120 下方 + RSI14&lt;30 + SKDJ 日/周底部共振，三者同时成立。</div>'+
+    (empty||('<div class="tbl-wrap"><table><thead><tr><th></th><th>标的</th><th>EMA120</th><th>RSI</th><th>共振</th><th>近30根</th></tr></thead><tbody>'+rows+'</tbody></table></div>'));
+}
+function renderCombo(){
+  const list=Object.values(state.results).filter(function(r){return qFilter(r.sym);}).map(function(r){
+    const t=[];
+    if(r.triangle) t.push({t:'三角',hot:r.triangle.brk.state==='confirmed'});
+    if(r.structural&&r.structural.length) t.push({t:'形态',hot:r.structural[0].brk.state==='confirmed'});
+    if(r.harmonics&&r.harmonics.length) t.push({t:'谐波',hot:true});
+    if(r.chan&&r.chan.zs.length) t.push({t:'缠论',hot:false});
+    if(r.elliott&&r.elliott.length) t.push({t:'艾略特',hot:false});
+    if(r.skdjBottom||r.skdjTop) t.push({t:'SKDJ',hot:true});
+    if(r.jiuzhuanFlag) t.push({t:'九转',hot:true});
+    if(r.santongFlag) t.push({t:'三通',hot:true});
+    return {r:r,tags:t,score:comboScore(r)};
+  }).filter(function(x){return x.tags.length>=2;}).sort(function(a,b){return b.tags.length-a.tags.length||b.score-a.score;});
+  CSV_ROWS=[['标的','命中数','命中分类','平均强度','24h%']].concat(list.map(function(x){
+    return [x.r.sym,x.tags.length,x.tags.map(function(t){return t.t;}).join('/'),Math.round(x.score/Math.max(1,x.tags.length)),x.r.chg.toFixed(2)];
+  }));
+  const empty=loadingOrEmpty(list,'本轮扫描池中暂无标的同时命中两个及以上分类。');
+  const rows=list.map(function(x){
+    return '<tr onclick="openDetail(\''+x.r.sym+'\')"><td>'+starHtml(x.r.sym)+'</td>'+symCell(x.r.sym)+
+      '<td class="tagset">'+x.tags.map(function(t){return '<span class="microtag '+(t.hot?'hot':'')+'">'+t.t+'</span>';}).join('')+'</td>'+
+      '<td>'+scoreCell(x.score/Math.max(1,x.tags.length))+'</td>'+
+      '<td class="stack"><div class="s">'+chgCell(x.r)+' 24h</div></td><td>'+sparklineSVG(x.r.closesSpark)+'</td></tr>';
+  }).join('');
+  return '<div class="sec-title"><h3>组合信号</h3><span class="n">'+list.length+'</span>'+csvBtn()+'</div><div class="sec-desc">同时命中两个及以上分类</div>'+
+    (empty||('<div class="tbl-wrap"><table><thead><tr><th></th><th>标的</th><th>命中分类</th><th>强度</th><th>24h</th><th>近30根</th></tr></thead><tbody>'+rows+'</tbody></table></div>'));
+}
+function renderFav(){
+  if(!state.watch.size) return emptyState('点击任意标的左侧的 ★ 即可加入收藏，数据会持久保存。');
+  const list=Array.from(state.watch).map(function(s){return state.results[s];}).filter(Boolean);
+  const miss=Array.from(state.watch).filter(function(s){return !state.results[s];});
+  CSV_ROWS=[['标的','24h%']].concat(list.map(function(r){ return [r.sym,r.chg.toFixed(2)]; }));
+  const rows=list.map(function(r){
+    return '<tr onclick="openDetail(\''+r.sym+'\')"><td>'+starHtml(r.sym)+'</td>'+symCell(r.sym)+
+      '<td class="tagset">'+(r.triangle?'<span class="microtag hot">三角</span>':'')+((r.structural&&r.structural.length)?'<span class="microtag hot">形态</span>':'')+((r.harmonics&&r.harmonics.length)?'<span class="microtag hot">谐波</span>':'')+((r.skdjBottom||r.skdjTop)?'<span class="microtag hot">SKDJ</span>':'')+(r.jiuzhuanFlag?'<span class="microtag hot">九转</span>':'')+(r.santongFlag?'<span class="microtag hot">三通</span>':'')+'</td>'+
+      '<td class="stack"><div class="s">'+chgCell(r)+' 24h</div></td><td>'+sparklineSVG(r.closesSpark)+'</td></tr>';
+  }).join('');
+  const mr=miss.map(function(s){ return '<tr class="nohover"><td></td><td class="sym">'+s+'</td><td colspan="3" class="s">本轮未扫描到该标的</td></tr>'; }).join('');
+  return '<div class="sec-title"><h3>收藏</h3><span class="n">'+state.watch.size+'</span>'+csvBtn()+'</div>'+
+    '<div class="tbl-wrap"><table><thead><tr><th></th><th>标的</th><th>命中分类</th><th>24h</th><th>近30根</th></tr></thead><tbody>'+rows+mr+'</tbody></table></div>';
+}
+
+const renderers={overview:renderOverview,sanjiao:renderSanjiao,xingtai:renderXingtai,xiebo:renderXiebo,chanlun:renderChanlun,ailiate:renderAiliate,
+  flow:renderFlow,verify:renderVerify,skdj:renderSkdj,jiuzhuan:renderJiuzhuan,santong:renderSantong,combo:renderCombo,fav:renderFav};
+function renderSection(){ CSV_ROWS=[]; document.getElementById('sectionHost').innerHTML='<div class="section">'+renderers[state.activeTab]()+'</div>'; }
+document.querySelectorAll('.tab').forEach(function(t){
+  t.addEventListener('click',function(){
+    document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('active');});
+    t.classList.add('active'); state.activeTab=t.dataset.tab; renderSection();
+  });
+});
+document.querySelectorAll('.tfbtn').forEach(function(b){
+  b.addEventListener('click',function(){
+    if(state.scanning) return;
+    document.querySelectorAll('.tfbtn').forEach(function(x){x.classList.remove('active');});
+    b.classList.add('active'); state.tf=b.dataset.tf;
+    document.getElementById('tfLabel').textContent=state.tf;
+    if(state.autoTimer){ clearInterval(state.autoTimer); state.autoTimer=setInterval(function(){ if(!state.scanning) runScan(); },AUTO_MS[state.tf]||9e5); }
+    runScan();
+  });
+});
+document.getElementById('sampleMode').addEventListener('change',function(){ if(!state.scanning) runScan(); });
+document.getElementById('scanN').addEventListener('change',function(){ if(!state.scanning) runScan(); });
+
+(async function init(){ await loadWatch(); await loadTG(); updateCounts(); renderSection(); runScan(); })();
+</script>
+</body>
+</html>
